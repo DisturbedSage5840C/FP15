@@ -29,3 +29,6 @@ Format: date, who decided, what, why. Gate sign-offs need a human name.
 
 ## Findings
 (Claude Code: log surprises here.)
+
+- 2026-11-05: The two files added to the project root (Company_Data.xlsx, Linkdln_posts_data_1.zip) were byte-identical to the copies in data/raw (same sha256 as MANIFEST.sha256). The root copies were deleted on request; data/raw is unchanged and its manifest still verifies.
+- 2026-11-05: Inside Linkdln_posts_data_1.zip, Linkdln_posts_data/Third_100_leaders/All_500.xlsx and Linkdln_posts_data/Fourth_100_leaders/All_500.xlsx are byte-identical (same sha256). data/raw is read-only, so nothing was removed. Open for the team: which folder is the true owner of this roster, and whether a wrong file was copied in. Ingest must not count both, or those leaders would be double-counted.
