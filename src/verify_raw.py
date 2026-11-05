@@ -1,6 +1,6 @@
 """Hash manifest for data/raw: written on the first run, verified on every later run.
 
-data/raw is read-only (CLAUDE.md). This module only ever reads those files; the sole
+data/raw is read-only (project rule). This module only ever reads those files; the sole
 file it creates is MANIFEST.sha256, in sha256sum-compatible format.
 """
 from __future__ import annotations
