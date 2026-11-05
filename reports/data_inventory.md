@@ -90,14 +90,13 @@ Counts and header labels only: no sheet names, cell values or post text appear h
 
 | Layout | Sheets | Data rows | Header cells |
 |---|---|---|---|
-| leader_posts_14 | 700 | 32,266 | 14 |
+| leader_posts_14 | 701 | 32,266 | 14 |
 | wordcount_leader_12 | 541 | 30,994 | 12 |
 | off-layout | 14 | 845 | 5, 9, 11, 13, 14, 18, 16382 |
 | word_frequency_9 | 14 | 499,625 | 9 |
 | roster_5 | 7 | 3,464 | 5 |
 | summary_8 | 6 | 465 | 8 |
 | no-header | 2 | 99 | - |
-| skipped | 1 | 0 | - |
 
 ## Odd sheets
 
@@ -106,9 +105,8 @@ Counts and header labels only: no sheet names, cell values or post text appear h
 | Kind of oddity | Sheets |
 |---|---|
 | off-layout | 14 |
-| known layout, with stray cells or blank rows | 8 |
+| known layout, with stray cells or blank rows | 9 |
 | no-header | 2 |
-| skipped | 1 |
 
 | Workbook | Sheet # | Layout | Header cells | Frame width | Data rows | Reasons |
 |---|---|---|---|---|---|---|
@@ -132,7 +130,7 @@ Counts and header labels only: no sheet names, cell values or post text appear h
 | Linkdln_posts_data/Sixth_100/All_500.xlsx | 0 | roster_5 | 5 | 7 | 653 | 6 non-empty cell(s) beyond the header |
 | Linkdln_posts_data/Sixth_100/wordcount_600.xlsx | 33 | off-layout | 18 | 18 | 6 | off-layout (nearest: wordcount_leader_12; missing: -; extra: 6 unnamed column(s)) |
 | Linkdln_posts_data/Sixth_100/wordcount_600.xlsx | 53 | off-layout | 16382 | 16,382 | 126 | off-layout (nearest: wordcount_leader_12; missing: -; extra: 16370 unnamed column(s)) |
-| Linkdln_posts_data/Third_100_leaders/300_file1_updated_final.xlsx | 1 | skipped | - | 14 | 0 | sheet is blank |
+| Linkdln_posts_data/Third_100_leaders/300_file1_updated_final.xlsx | 1 | leader_posts_14 | 14 | 14 | 0 | 46 blank row(s) above the header |
 | Linkdln_posts_data/Third_100_leaders/300_file2_updated_final.xlsx | 17 | off-layout | 5 | 5 | 9 | off-layout (nearest: leader_posts_14; missing: selected_order, excel_data_row_number, excel_file_row_number, leader_name, company_name, current_title, role_start_year, ceo_type, link_to_post_url, linkedin_profile_url; extra: link_to_the_post_(if_available)) |
 | Linkdln_posts_data/Third_100_leaders/All_500.xlsx | 0 | roster_5 | 5 | 7 | 653 | 2 non-empty cell(s) beyond the header |
 | Linkdln_posts_data/Third_100_leaders/wordcount_300.xlsx | 59 | off-layout | 5 | 5 | 9 | off-layout (nearest: wordcount_leader_12; missing: leader_name, company_name, current_title, role_start_year, ceo_type, link_to_post_url, linkedin_profile_url; extra: link_to_the_post_(if_available)) |
@@ -144,14 +142,14 @@ Counts and header labels only: no sheet names, cell values or post text appear h
 
 | Variable | Raw header | Sheets | Non-empty / rows |
 |---|---|---|---|
-| leader_name | leader_name | 700 | 14,474 / 32,266 |
-| company_name | company_name | 700 | 14,474 / 32,266 |
-| current_title | current_title | 700 | 14,474 / 32,266 |
-| role_start_year | role_start_year | 700 | 1 / 32,266 |
-| ceo_type | ceo_type | 700 | 14,474 / 32,266 |
-| platform | platform | 700 | 14,474 / 32,266 |
-| post_date | post_date | 700 | 9 / 32,266 |
-| post_date_text | post_date_text | 700 | 8,031 / 32,266 |
+| leader_name | leader_name | 701 | 14,474 / 32,266 |
+| company_name | company_name | 701 | 14,474 / 32,266 |
+| current_title | current_title | 701 | 14,474 / 32,266 |
+| role_start_year | role_start_year | 701 | 1 / 32,266 |
+| ceo_type | ceo_type | 701 | 14,474 / 32,266 |
+| platform | platform | 701 | 14,474 / 32,266 |
+| post_date | post_date | 701 | 9 / 32,266 |
+| post_date_text | post_date_text | 701 | 8,031 / 32,266 |
 
 ### off-layout
 
@@ -225,11 +223,11 @@ Not present in this layout: leader_name, company_name, role_start_year, ceo_type
 
 ## Author blocks
 
-1,276 sheets have a leader/founder column. A block is a run of consecutive rows by the same leader key; the key is the exact text of the cell, so near-duplicate spellings count as different leaders until the ID matching step.
+1,277 sheets have a leader/founder column. A block is a run of consecutive rows by the same leader key; the key is the exact text of the cell, so near-duplicate spellings count as different leaders until the ID matching step.
 
 | Author blocks in a sheet | Sheets |
 |---|---|
-| 0 | 274 |
+| 0 | 275 |
 | 1 | 940 |
 | 2 | 4 |
 | 17 | 2 |
@@ -265,7 +263,7 @@ Not present in this layout: leader_name, company_name, role_start_year, ceo_type
 
 | Distinct leader keys in a sheet | Sheets |
 |---|---|
-| 0 | 274 |
+| 0 | 275 |
 | 1 | 940 |
 | 2 | 4 |
 | 17 | 2 |

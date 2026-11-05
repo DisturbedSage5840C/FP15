@@ -132,6 +132,18 @@ def test_blank_first_row_is_skipped_to_find_the_header() -> None:
     assert "1 blank row(s) above the header" in profile.odd_reasons
 
 
+def test_header_far_below_many_blank_rows_is_still_found() -> None:
+    header = list(LEADER_POSTS_14)
+    record = _record([[None] * len(header)] * 46 + [header])
+
+    profile = profile_sheet(record, position=0)
+
+    assert profile.header_kind == "header"
+    assert profile.layout == "leader_posts_14"
+    assert profile.header_row_index == 46
+    assert profile.n_data_rows == 0
+
+
 def test_trailing_blank_header_cells_are_trimmed_and_blank_width_is_noted() -> None:
     header = list(LEADER_POSTS_14) + [None, None]
     record = _record([header, [None] * len(header)])

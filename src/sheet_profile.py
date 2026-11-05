@@ -62,7 +62,6 @@ SKIPPED_LAYOUT = "skipped"
 AUTHOR_COLUMNS = ("leader_name", "founder", "person_name")
 HEADER_VOCABULARY = frozenset(c for layout in LAYOUTS.values() for c in layout) | frozenset(STUDY_VARIABLES)
 MIN_HEADER_HITS = 3  # known header words needed before a row is called a header
-MAX_LEADING_BLANK_ROWS = 20
 AUTHOR_HASH_CHARS = 12
 
 
@@ -110,9 +109,12 @@ def _header_cells(row: pd.Series) -> tuple[str, ...]:
 
 
 def _first_nonblank_row(frame: pd.DataFrame) -> int | None:
-    head = frame.iloc[:MAX_LEADING_BLANK_ROWS].dropna(axis=1, how="all")
-    filled = _nonblank(head).any(axis=1)
-    return int(filled.to_numpy().argmax()) if filled.any() else None
+    """Index of the first row holding something other than whitespace, however far down."""
+    candidates = frame.notna().any(axis=1).to_numpy().nonzero()[0]
+    for index in candidates:
+        if any(_cell_text(value) for value in frame.iloc[int(index)].tolist()):
+            return int(index)
+    return None
 
 
 def _looks_like_header(normalised: tuple[str, ...]) -> bool:
