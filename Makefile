@@ -5,8 +5,9 @@ verify:   ## check raw hash manifest (writes it on first run)
 	$(PY) -m src.verify_raw
 inventory: ## write reports/data_inventory.md (files, sheets, header layouts, row counts)
 	$(PY) -m src.inventory
-ingest:   ## harmonise sheets into data/interim and write reports/harmonise_summary.md
+ingest:   ## harmonise sheets and profile Company_Data (contact columns dropped at load)
 	$(PY) -m src.harmonise
+	$(PY) -m src.company_data
 ids:      ## build leader_id table across the three people lists
 	$(PY) -m src.ids
 segment:  ## split cells into author blocks and clean
