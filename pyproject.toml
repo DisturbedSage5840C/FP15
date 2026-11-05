@@ -7,6 +7,7 @@ dependencies = [
     "pandas>=2.2",
     "openpyxl>=3.1",
     "pyyaml>=6.0",
+    "defusedxml>=0.7",
 ]
 
 [project.optional-dependencies]
