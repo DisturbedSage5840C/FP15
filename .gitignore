@@ -1,2 +1,16 @@
 .remember/
 .DS_Store
+# raw and confidential data never goes to GitHub; only the hash manifest is kept
+data/raw/*
+!data/raw/MANIFEST.sha256
+!data/raw/.gitkeep
+data/interim/
+data/derived/*.csv
+*.zip
+*.xlsx
+.env
+__pycache__/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.coverage

@@ -1,0 +1,10 @@
+# Single source for every pass mark. Change here only, and log the change in docs/decisions.md.
+min_posts_per_leader: 15
+segmentation_accuracy: 0.95
+segmentation_check_cells: 200
+gold_set_size: 300
+krippendorff_alpha_min: 0.67
+dictionary_human_corr_min: 0.40
+llm_judge_sample: 2800
+fdr_method: benjamini_hochberg
+fdr_q: 0.05
