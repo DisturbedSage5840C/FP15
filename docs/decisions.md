@@ -21,7 +21,7 @@ Format: date, who decided, what, why. Gate sign-offs need a human name.
 6. LIWC-22 licence, or open dictionaries only.
 7. Which LLMs and budget; no-training settings available?
 8. Target venue.
-9. Which list of people is the base (All_500 roster files, summaries, Company_Data).
+9. SETTLED 2026-11-05 (project owner): the base roster is seventh_100_leaders/All_500.xlsx, loaded once (see Findings). Matching the wordcount summaries and Company_Data against it is still Step 4, to be resolved by hand.
 10. Company_Data.xlsx came from Anshika via the data owner. Still open: when it was built and who coded Gender.
 11. Trait list: Northouse's five plus three exploratory measures?
 12. Scraping likes, reposts and followers: allowed or not, under what approval? Nothing is scraped until the course mentors decides.
@@ -31,4 +31,4 @@ Format: date, who decided, what, why. Gate sign-offs need a human name.
 (Claude Code: log surprises here.)
 
 - 2026-11-05: The two files added to the project root (Company_Data.xlsx, Linkdln_posts_data_1.zip) were byte-identical to the copies in data/raw (same sha256 as MANIFEST.sha256). The root copies were deleted on request; data/raw is unchanged and its manifest still verifies.
-- 2026-11-05: Inside Linkdln_posts_data_1.zip, Linkdln_posts_data/Third_100_leaders/All_500.xlsx and Linkdln_posts_data/Fourth_100_leaders/All_500.xlsx are byte-identical (same sha256). data/raw is read-only, so nothing was removed. Open for the team: which folder is the true owner of this roster, and whether a wrong file was copied in. Ingest must not count both, or those leaders would be double-counted.
+- 2026-11-05: There are five All_500.xlsx roster files in Linkdln_posts_data_1.zip (Third, Fourth, Fifth, Sixth, seventh folders). Third and Fourth are byte-identical. All five hold the same 653 people: columns CompanyName, Person_Name, Current_Title, LinkedIn_Profile_Link and person_id are identical in every copy (checked by Claude Code: 653 unique person_id, none blank). They differ only in free-text collector notes in stray cells beyond column E (2 to 6 non-empty cells per file; the Sixth and seventh files tie at 6). The notes look like scrape-depth hints. data/raw is read-only, so nothing was removed. Rule for ingest (project owner, 2026-11-05): load the roster ONCE from seventh_100_leaders/All_500.xlsx, never concatenate the five copies, keep the stray-cell notes as metadata.
