@@ -8,3 +8,7 @@ dictionary_human_corr_min: 0.40
 llm_judge_sample: 2800
 fdr_method: benjamini_hochberg
 fdr_q: 0.05
+# Step A (reaction-count check). Sampling settings only; nothing here is a pass mark.
+reaction_check_number_on_own_line: 40
+reaction_check_control: 10
+reaction_check_seed: 20261107

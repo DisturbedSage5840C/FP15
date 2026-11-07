@@ -1,6 +1,6 @@
 PY ?= .venv/bin/python
 
-.PHONY: verify inventory ingest ids segment test all
+.PHONY: verify inventory ingest ids reaction-check segment test all
 verify:   ## check raw hash manifest (writes it on first run)
 	$(PY) -m src.verify_raw
 inventory: ## write reports/data_inventory.md (files, sheets, header layouts, row counts)
@@ -10,8 +10,10 @@ ingest:   ## harmonise sheets and profile Company_Data (contact columns dropped 
 	$(PY) -m src.company_data
 ids:      ## build leader_id table across the three people lists
 	$(PY) -m src.ids
+reaction-check: ## count trailing-number shapes in raw posts and draw the hand-check sample (data/derived, git-ignored)
+	$(PY) -m src.reaction_count_check
 segment:  ## split cells into author blocks and clean
 	$(PY) -m src.segment
 test:
 	$(PY) -m pytest -q
-all: verify inventory ingest ids segment test
+all: verify inventory ingest ids reaction-check segment test
