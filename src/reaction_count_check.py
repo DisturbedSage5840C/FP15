@@ -46,6 +46,15 @@ _AGE_LINE = re.compile(_AGE_FRAGMENT)
 _AGE_AT_END = re.compile(rf"(?<![\w.]){_AGE_FRAGMENT}$")
 _PLAIN_YEAR = re.compile(rf"\d{{{YEAR_DIGITS}}}")
 _SUFFIXED = re.compile(r"[KkMm]$")
+# The sample is opened in a spreadsheet by people, so only LinkedIn post links are accepted and any
+# cell a spreadsheet would run as a formula is defused with a leading apostrophe.
+_LINKEDIN_LINK = re.compile(r"https://(?:[a-z0-9-]+\.)?linkedin\.com/", re.IGNORECASE)
+FORMULA_TRIGGERS = ("=", "+", "-", "@", "\t", "\r")
+
+
+def spreadsheet_safe(value: str) -> str:
+    """Prefix an apostrophe when a spreadsheet would read the cell as a formula."""
+    return f"'{value}" if value.startswith(FORMULA_TRIGGERS) else value
 
 
 @dataclass(frozen=True)
@@ -205,7 +214,7 @@ def _eligible_frame(raw: pd.DataFrame) -> pd.DataFrame:
     rows = []
     for row in raw.itertuples(index=False):
         key, group = name_key(row.leader), _group_of(row.post_text)
-        if key and row.link and group:
+        if key and _LINKEDIN_LINK.match(row.link) and group:
             ref = f"{row.workbook}#{row.sheet_idx}:r{row.source_row}"
             rows.append((key, group, ref, row.link, _last_line(row.post_text)))
     return pd.DataFrame(rows, columns=["leader_key", "group", "ref", "link", "last_line"])
@@ -217,9 +226,9 @@ def _sample_frame(chosen: pd.DataFrame) -> pd.DataFrame:
             "n": range(1, len(chosen) + 1),
             "group": chosen["group"].to_list(),
             "leader_id": [leader_id_for(key) for key in chosen["leader_key"]],
-            "link": chosen["link"].to_list(),
-            "ref": chosen["ref"].to_list(),
-            "last_line": chosen["last_line"].to_list(),
+            "link": [spreadsheet_safe(value) for value in chosen["link"]],
+            "ref": [spreadsheet_safe(value) for value in chosen["ref"]],
+            "last_line": [spreadsheet_safe(value) for value in chosen["last_line"]],
         }
     )
     return out[SAMPLE_COLUMNS]
@@ -250,7 +259,7 @@ def _rule_lines(settings: CheckSettings) -> list[str]:
         "",
         "## Sample",
         "",
-        "- Eligible: has a post link and a leader name (sample only; the counts above use all raw cells).",
+        "- Eligible: has a LinkedIn post link and a leader name (sample only; the counts above use all raw cells).",
         f"- Groups: {settings.n_number_on_own_line} with the number alone on its own line, "
         f"{settings.n_control} that do not end in a number (control).",
         "- Sample: one cell per leader; each leader appears once.",
@@ -289,9 +298,9 @@ def render_report(
     own = frame[frame["group"] == OWN_LINE]
     control = frame[frame["group"] == CONTROL]
     frame_rows = [
-        ("Own-line cells with a link", _fmt(len(own))),
+        ("Own-line cells with a LinkedIn link", _fmt(len(own))),
         ("Leaders with such a cell", _fmt(own["leader_key"].nunique())),
-        ("Cells with a link that do not end in a number", _fmt(len(control))),
+        ("Cells with a LinkedIn link that do not end in a number", _fmt(len(control))),
         ("Leaders with such a cell (control)", _fmt(control["leader_key"].nunique())),
         ("Drawn: number alone on its own line", _fmt(int((drawn["group"] == OWN_LINE).sum()))),
         ("Drawn: control", _fmt(int((drawn["group"] == CONTROL).sum()))),

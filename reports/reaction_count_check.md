@@ -22,10 +22,10 @@ Counts from raw post cells already in data/interim. Nothing was downloaded.
 
 | Measure | Count |
 |---|---|
-| Own-line cells with a link | 2,754 |
+| Own-line cells with a LinkedIn link | 2,753 |
 | Leaders with such a cell | 378 |
-| Cells with a link that do not end in a number | 241 |
-| Leaders with such a cell (control) | 85 |
+| Cells with a LinkedIn link that do not end in a number | 240 |
+| Leaders with such a cell (control) | 84 |
 | Drawn: number alone on its own line | 40 |
 | Drawn: control | 10 |
 
@@ -42,7 +42,7 @@ Counts from raw post cells already in data/interim. Nothing was downloaded.
 
 ## Sample
 
-- Eligible: has a post link and a leader name (sample only; the counts above use all raw cells).
+- Eligible: has a LinkedIn post link and a leader name (sample only; the counts above use all raw cells).
 - Groups: 40 with the number alone on its own line, 10 that do not end in a number (control).
 - Sample: one cell per leader; each leader appears once.
 - Seed: 20261107

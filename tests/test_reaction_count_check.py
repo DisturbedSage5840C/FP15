@@ -20,6 +20,7 @@ from src.reaction_count_check import (
     load_settings,
     run,
     select_sample,
+    spreadsheet_safe,
 )
 
 POST_COLUMNS = ["leader", "company", "workbook", "sheet_idx", "source_row", "post_text", "link", "text_kind"]
@@ -257,15 +258,15 @@ def workspace(tmp_path: Path) -> dict[str, Path]:
     interim = tmp_path / "interim"
     interim.mkdir()
     rows = [
-        _post("Ann Rao", 1, "Hiring engineers for our Bangalore office\n120", "https://x.test/p1"),
-        _post("Ann Rao", 2, "No number here", "https://x.test/p2"),
+        _post("Ann Rao", 1, "Hiring engineers for our Bangalore office\n120", "https://www.linkedin.com/posts/p1"),
+        _post("Ann Rao", 2, "No number here", "https://www.linkedin.com/posts/p2"),
         _post("Ann Rao", 3, "hiring engineers bangalore office", "", "cleaned"),
-        _post("Bo Lee", 1, "Quarterly results were strong\n2024", "https://x.test/p3"),
-        _post("Cy Dunn", 1, "Loving the #Top10", "https://x.test/p4"),
-        _post("Di Fox", 1, "Great day\n5yr", "https://x.test/p5"),
+        _post("Bo Lee", 1, "Quarterly results were strong\n2024", "https://www.linkedin.com/posts/p3"),
+        _post("Cy Dunn", 1, "Loving the #Top10", "https://www.linkedin.com/posts/p4"),
+        _post("Di Fox", 1, "Great day\n5yr", "https://www.linkedin.com/posts/p5"),
         _post("Ed Gray", 1, "We started this in 2019", ""),
-        _post("Fay Ito", 1, "Proud moment\n3mo\n45", "https://x.test/p6"),
-        _post("Gus Roe", 1, "All good", "https://x.test/p7"),
+        _post("Fay Ito", 1, "Proud moment\n3mo\n45", "https://www.linkedin.com/posts/p6"),
+        _post("Gus Roe", 1, "All good", "https://www.linkedin.com/posts/p7"),
         _post("Gus Roe", 2, "Unlinked note\n88", ""),
     ]
     pd.DataFrame(rows, columns=POST_COLUMNS).to_csv(interim / "harmonised_posts.csv", index=False)
@@ -331,8 +332,8 @@ def test_report_gives_the_sampling_frame_and_the_rules(workspace: dict[str, Path
     text = _report(workspace)
     assert "Seed: 1" in text
     assert "one cell per leader" in text.lower()
-    assert "Eligible: has a post link" in text
-    assert "| Own-line cells with a link | 3 |" in text
+    assert "Eligible: has a LinkedIn post link" in text
+    assert "| Own-line cells with a LinkedIn link | 3 |" in text
 
 
 def test_report_has_no_names_no_post_text_and_no_links(workspace: dict[str, Path]) -> None:
@@ -341,7 +342,7 @@ def test_report_has_no_names_no_post_text_and_no_links(workspace: dict[str, Path
     text = _report(workspace)
     for name in NAMES:
         assert name not in text
-    for fragment in ("Bangalore", "Quarterly", "engineers", "#Top10", "x.test", "http"):
+    for fragment in ("Bangalore", "Quarterly", "engineers", "#Top10", "linkedin.com/", "http"):
         assert fragment not in text
 
 
@@ -359,7 +360,7 @@ def test_sample_has_one_linked_cell_per_leader_in_the_requested_groups(workspace
     assert sample["group"].value_counts().to_dict() == {OWN_LINE: 2, CONTROL: 1}
     assert sample["leader_id"].str.fullmatch(r"L[0-9a-f]{10}").all()
     assert sample["leader_id"].is_unique
-    assert sample["link"].str.startswith("https://x.test/").all()
+    assert sample["link"].str.startswith("https://www.linkedin.com/posts/").all()
 
 
 def test_sample_own_line_cells_end_in_a_number_and_controls_do_not(workspace: dict[str, Path]) -> None:
@@ -370,6 +371,53 @@ def test_sample_own_line_cells_end_in_a_number_and_controls_do_not(workspace: di
     control = sample[sample["group"] == CONTROL]
     assert own["last_line"].str.fullmatch(r"[\d.,KkMm]+").all()
     assert not control["last_line"].str.fullmatch(r"[\d.,KkMm]+").any()
+
+
+def _rewrite_posts(workspace: dict[str, Path], rows: list[list[object]]) -> None:
+    pd.DataFrame(rows, columns=POST_COLUMNS).to_csv(workspace["interim"] / "harmonised_posts.csv", index=False)
+
+
+def test_sample_neutralises_cells_a_spreadsheet_would_run_as_formulas(workspace: dict[str, Path]) -> None:
+    good = "https://www.linkedin.com/posts/p1"
+    _rewrite_posts(
+        workspace,
+        [
+            _post("Ann Rao", 1, 'Intro\n=HYPERLINK("http://evil.test","x")', good),
+            _post("Bo Lee", 1, "Intro\n@SUM(A1)", good),
+            _post("Cy Dunn", 1, "Intro\n+cmd|calc", good),
+            _post("Di Fox", 1, "Intro\n-note", good),
+        ],
+    )
+
+    assert _go(workspace, own=0, control=4) == 0
+
+    last_lines = _sample(workspace)["last_line"]
+    assert len(last_lines) == 4
+    assert last_lines.str.startswith("'").all()
+
+
+def test_spreadsheet_safe_prefixes_every_formula_trigger_and_leaves_other_text() -> None:
+    for risky in ("=1+1", "+1", "-1", "@a", "\tx", "\rx"):
+        assert spreadsheet_safe(risky) == "'" + risky
+    for fine in ("", "plain", "12,345", "a=b", "https://www.linkedin.com/posts/p1"):
+        assert spreadsheet_safe(fine) == fine
+
+
+def test_links_off_linkedin_or_without_http_scheme_are_not_sampled(workspace: dict[str, Path]) -> None:
+    _rewrite_posts(
+        workspace,
+        [
+            _post("Ann Rao", 1, "Intro\n10", "https://www.linkedin.com/posts/ok"),
+            _post("Bo Lee", 1, "Intro\n10", "http://evil.test/p"),
+            _post("Cy Dunn", 1, "Intro\n10", "javascript:alert(1)"),
+            _post("Di Fox", 1, "Intro\n10", "https://notlinkedin.com/p"),
+            _post("Ed Gray", 1, "Intro\n10", "https://linkedin.com.evil.test/p"),
+        ],
+    )
+
+    assert _go(workspace, own=5, control=0) == 0
+
+    assert _sample(workspace)["link"].to_list() == ["https://www.linkedin.com/posts/ok"]
 
 
 def test_sample_has_no_column_holding_the_parsed_number(workspace: dict[str, Path]) -> None:
