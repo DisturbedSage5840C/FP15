@@ -15,3 +15,6 @@ reaction_check_seed: 20261107
 # Step B (extra text features). Sampling settings only; nothing here is a pass mark.
 extra_features_examples_per_class: 10
 extra_features_seed: 20261107
+
+# Step C (Company_Data columns). Length of the proposed list; not a pass mark.
+company_columns_top_n: 20
