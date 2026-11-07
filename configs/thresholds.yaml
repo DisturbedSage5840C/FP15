@@ -12,3 +12,6 @@ fdr_q: 0.05
 reaction_check_number_on_own_line: 40
 reaction_check_control: 10
 reaction_check_seed: 20261107
+# Step B (extra text features). Sampling settings only; nothing here is a pass mark.
+extra_features_examples_per_class: 10
+extra_features_seed: 20261107

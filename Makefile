@@ -1,6 +1,6 @@
 PY ?= .venv/bin/python
 
-.PHONY: verify inventory ingest ids reaction-check segment test all
+.PHONY: verify inventory ingest ids reaction-check extra-features segment test all
 verify:   ## check raw hash manifest (writes it on first run)
 	$(PY) -m src.verify_raw
 inventory: ## write reports/data_inventory.md (files, sheets, header layouts, row counts)
@@ -12,8 +12,10 @@ ids:      ## build leader_id table across the three people lists
 	$(PY) -m src.ids
 reaction-check: ## count trailing-number shapes in raw posts and draw the hand-check sample (data/derived, git-ignored)
 	$(PY) -m src.reaction_count_check
+extra-features: ## propose which text features are reliable and list cells the rules handle badly (reports/extra_features.md)
+	$(PY) -m src.extra_features
 segment:  ## split cells into author blocks and clean
 	$(PY) -m src.segment
 test:
 	$(PY) -m pytest -q
-all: verify inventory ingest ids reaction-check segment test
+all: verify inventory ingest ids reaction-check extra-features segment test
