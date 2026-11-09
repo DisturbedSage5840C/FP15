@@ -38,13 +38,19 @@ scrape date is unknown.
 
 Method: script-based. Devanagari and Latin letters are counted; fewer than 20
 letters gives `other`; a minor script above 20% of letters gives `mixed`.
-Hindi written in Latin letters is counted as English: a stated limit of the method.
+
+Possible Hinglish (Hindi written in Latin letters): a cell that is mostly Latin letters is flagged
+`Hinglish` when at least 3 of its Latin-letter words, and at least 10% of them, are on a list of common romanised Hindi function words
+(src/hinglish.py). The list holds pronouns, particles, postpositions, auxiliaries, conjunctions and question
+words only, no names and no post text. Words that are also common English words are left off, so some
+Hinglish is missed. The flag is a counting rule, not a reading of the text.
 
 | Flag | Cells |
 |---|---|
-| English | 21951 |
-| Hindi | 1 |
+| English | 21926 |
+| Hinglish | 25 |
 | mixed | 62 |
+| Hindi | 1 |
 | other | 9 |
 
 ## Reaction count

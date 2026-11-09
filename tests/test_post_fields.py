@@ -5,9 +5,11 @@ from pathlib import Path
 
 import pytest
 
+from src.hinglish import HINGLISH_WORDS, hinglish_hits
 from src.post_fields import (
     ENGLISH,
     HINDI,
+    HINGLISH,
     MIXED,
     OTHER,
     LanguageSettings,
@@ -16,7 +18,7 @@ from src.post_fields import (
     load_language_settings,
 )
 
-SETTINGS = LanguageSettings(min_letters=10, minor_share=0.2)
+SETTINGS = LanguageSettings(min_letters=10, minor_share=0.2, hinglish_min_hits=3, hinglish_min_share=0.15)
 HINDI_TEXT = "यह एक परीक्षण वाक्य है जो हिंदी में लिखा गया है"
 ENGLISH_TEXT = "This is a plain test sentence written in English"
 
@@ -84,15 +86,46 @@ def test_another_script_is_other() -> None:
     assert language_flag("இது ஒரு சோதனை வாக்கியம் ஆகும் தமிழ்", SETTINGS) == OTHER
 
 
-def test_hindi_in_latin_letters_is_not_detected_and_counts_as_english() -> None:
-    assert language_flag("Aap sabhi ko nav varsh ki hardik shubhkamnayen", SETTINGS) == ENGLISH
+def test_romanised_hindi_function_words_flag_possible_hinglish() -> None:
+    assert language_flag("Aap sabhi ko nav varsh ki hardik shubhkamnayen, hum sab ek hain", SETTINGS) == HINGLISH
+
+
+def test_a_few_romanised_words_in_a_long_english_text_stay_english() -> None:
+    text = (ENGLISH_TEXT + " ") * 6 + "aur hai ki"
+
+    assert language_flag(text, SETTINGS) == ENGLISH
+
+
+def test_too_few_romanised_hits_stay_english_even_when_the_text_is_short() -> None:
+    assert language_flag("Aap ko hardik shubhkamnayen from the whole team", SETTINGS) == ENGLISH
+
+
+def test_english_words_that_look_like_hindi_function_words_are_not_in_the_list() -> None:
+    assert language_flag("The main point is to do it so the team can go on to the next one", SETTINGS) == ENGLISH
+
+
+def test_hinglish_is_only_considered_for_latin_script_text() -> None:
+    assert language_flag(f"{HINDI_TEXT} {ENGLISH_TEXT}", SETTINGS) == MIXED
+
+
+def test_hinglish_hits_count_listed_words_and_all_latin_words() -> None:
+    assert hinglish_hits("Aap aur hum, the team!") == (3, 5)
+
+
+def test_the_word_list_holds_lowercase_function_words_only() -> None:
+    assert HINGLISH_WORDS == frozenset(word.lower() for word in HINGLISH_WORDS)
+    assert {"hai", "aur", "nahi", "kya"} <= HINGLISH_WORDS
+    assert not HINGLISH_WORDS & {"the", "main", "to", "me", "is", "do", "so", "he", "hi", "par"}
 
 
 def test_settings_load_from_the_thresholds_file(tmp_path: Path) -> None:
     path = tmp_path / "t.yaml"
-    path.write_text("language_min_letters: 15\nlanguage_minor_share: 0.25\n", encoding="utf-8")
+    path.write_text(
+        "language_min_letters: 15\nlanguage_minor_share: 0.25\nhinglish_min_hits: 4\nhinglish_min_share: 0.1\n",
+        encoding="utf-8",
+    )
 
-    assert load_language_settings(path) == LanguageSettings(min_letters=15, minor_share=0.25)
+    assert load_language_settings(path) == LanguageSettings(15, 0.25, 4, 0.1)
 
 
 def test_a_missing_settings_key_is_named_in_the_error(tmp_path: Path) -> None:

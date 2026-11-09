@@ -26,7 +26,7 @@ from src.harmonise import DEFAULT_INTERIM_DIR
 from src.id_key import MissingIdKey
 from src.id_matching import leader_id_for
 from src.name_key import name_key
-from src.post_fields import LANGUAGE_FLAGS, LanguageSettings, age_months, language_flag
+from src.post_fields import LANGUAGE_FLAGS, LANGUAGE_KEYS, LanguageSettings, age_months, language_flag, load_language_settings
 from src.post_interface import (
     ALL_RULES,
     LinePattern,
@@ -52,7 +52,7 @@ CLEAN_COLUMNS = [
 PARSED = "parsed"
 UNVERIFIED = "unverified"
 _COUNT_LINE = re.compile(r"^\d{1,3}(,\d{3})+$|^\d+$")
-_SETTING_KEYS = ("language_min_letters", "language_minor_share", "interface_min_leaders", "reaction_check_confirmed")
+_SETTING_KEYS = (*LANGUAGE_KEYS, "interface_min_leaders", "reaction_check_confirmed")
 
 
 @dataclass(frozen=True)
@@ -71,7 +71,7 @@ def load_settings(path: Path = DEFAULT_THRESHOLDS_PATH) -> CleaningSettings:
         if key not in values:
             raise ValueError(f"{path}: missing key {key}")
     return CleaningSettings(
-        language=LanguageSettings(int(values["language_min_letters"]), float(values["language_minor_share"])),
+        language=load_language_settings(path),
         interface_min_leaders=int(values["interface_min_leaders"]),
         reaction_check_confirmed=bool(values["reaction_check_confirmed"]),
     )
@@ -191,7 +191,13 @@ def render_report(
         "",
         f"Method: script-based. Devanagari and Latin letters are counted; fewer than {language_settings.min_letters}",
         f"letters gives `other`; a minor script above {language_settings.minor_share:.0%} of letters gives `mixed`.",
-        "Hindi written in Latin letters is counted as English: a stated limit of the method.",
+        "",
+        "Possible Hinglish (Hindi written in Latin letters): a cell that is mostly Latin letters is flagged",
+        f"`Hinglish` when at least {language_settings.hinglish_min_hits} of its Latin-letter words, and at least "
+        f"{language_settings.hinglish_min_share:.0%} of them, are on a list of common romanised Hindi function words",
+        "(src/hinglish.py). The list holds pronouns, particles, postpositions, auxiliaries, conjunctions and question",
+        "words only, no names and no post text. Words that are also common English words are left off, so some",
+        "Hinglish is missed. The flag is a counting rule, not a reading of the text.",
         "",
         "| Flag | Cells |",
         "|---|---|",

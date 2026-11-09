@@ -1,8 +1,9 @@
 """Per-cell fields read from the raw post text: relative age in months and a language flag.
 
 Claim limit: the age is LinkedIn's rounded relative age ("5yr", "3mo") turned into months. It is never turned
-into a date, because the scrape date is unknown. The language flag looks at script only: Devanagari versus
-Latin letters. Hindi written in Latin letters is counted as English; this is a stated limit of the method.
+into a date, because the scrape date is unknown. The language flag first looks at script (Devanagari versus
+Latin letters). Text that is mostly Latin letters is then checked for romanised Hindi function words and flagged
+"Hinglish" (possible) when enough of them appear; see src/hinglish.py for the method and the list.
 """
 from __future__ import annotations
 
@@ -13,10 +14,12 @@ from pathlib import Path
 
 import yaml
 
+from src.hinglish import hinglish_hits
+
 DEFAULT_THRESHOLDS_PATH = Path("configs/thresholds.yaml")
 
-ENGLISH, HINDI, MIXED, OTHER = "English", "Hindi", "mixed", "other"
-LANGUAGE_FLAGS = (ENGLISH, HINDI, MIXED, OTHER)
+ENGLISH, HINGLISH, MIXED, HINDI, OTHER = "English", "Hinglish", "mixed", "Hindi", "other"
+LANGUAGE_FLAGS = (ENGLISH, HINGLISH, MIXED, HINDI, OTHER)
 
 MONTHS_PER_YEAR = 12
 WEEKS_PER_YEAR = 52
@@ -33,6 +36,7 @@ AGE_DECIMALS = 4
 # An age line starts with the token and is followed by the bullet LinkedIn prints after it.
 _AGE_LINE = re.compile(r"^(\d{1,3})(yr|mo|w|d|h)\s*•")
 KNOWN_SCRIPT_MIN_SHARE = 0.5
+LANGUAGE_KEYS = ("language_min_letters", "language_minor_share", "hinglish_min_hits", "hinglish_min_share")
 
 
 def age_months(text: str) -> float | None:
@@ -50,15 +54,22 @@ class LanguageSettings:
 
     min_letters: int
     minor_share: float
+    hinglish_min_hits: int
+    hinglish_min_share: float
 
 
 def load_language_settings(path: Path = DEFAULT_THRESHOLDS_PATH) -> LanguageSettings:
-    """Read the two language keys; a missing key is named in the error."""
+    """Read the language keys; a missing key is named in the error."""
     values = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    for key in ("language_min_letters", "language_minor_share"):
+    for key in LANGUAGE_KEYS:
         if key not in values:
             raise ValueError(f"{path}: missing key {key}")
-    return LanguageSettings(int(values["language_min_letters"]), float(values["language_minor_share"]))
+    return LanguageSettings(
+        int(values["language_min_letters"]),
+        float(values["language_minor_share"]),
+        int(values["hinglish_min_hits"]),
+        float(values["hinglish_min_share"]),
+    )
 
 
 def _script_counts(text: str) -> tuple[int, int, int]:
@@ -75,13 +86,19 @@ def _script_counts(text: str) -> tuple[int, int, int]:
 
 
 def language_flag(text: str, settings: LanguageSettings) -> str:
-    """English, Hindi, mixed or other, by the share of Devanagari versus Latin letters."""
+    """English, Hinglish, Hindi, mixed or other: script shares first, then romanised Hindi words in Latin text."""
     devanagari, latin, letters = _script_counts(text)
     known = devanagari + latin
     if letters < settings.min_letters or known / letters < KNOWN_SCRIPT_MIN_SHARE:
         return OTHER
     if devanagari / known <= settings.minor_share:
-        return ENGLISH
+        return HINGLISH if _possible_hinglish(text, settings) else ENGLISH
     if latin / known <= settings.minor_share:
         return HINDI
     return MIXED
+
+
+def _possible_hinglish(text: str, settings: LanguageSettings) -> bool:
+    """True when enough Latin-letter words are romanised Hindi function words, by count and by share."""
+    hits, words = hinglish_hits(text)
+    return hits >= settings.hinglish_min_hits and hits / words >= settings.hinglish_min_share

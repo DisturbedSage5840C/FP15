@@ -21,7 +21,7 @@ from src.post_cleaning import (
 from src.post_fields import LanguageSettings
 from src.verify_raw import ManifestMismatch
 
-LANGUAGE = LanguageSettings(min_letters=5, minor_share=0.2)
+LANGUAGE = LanguageSettings(min_letters=5, minor_share=0.2, hinglish_min_hits=3, hinglish_min_share=0.15)
 SETTINGS = CleaningSettings(language=LANGUAGE, interface_min_leaders=2, reaction_check_confirmed=False)
 CONFIRMED = CleaningSettings(language=LANGUAGE, interface_min_leaders=2, reaction_check_confirmed=True)
 
@@ -91,12 +91,13 @@ def test_unclassified_patterns_exclude_lines_a_rule_already_covers() -> None:
 def test_settings_load_from_the_thresholds_file(tmp_path: Path) -> None:
     path = tmp_path / "t.yaml"
     path.write_text(
-        "language_min_letters: 7\nlanguage_minor_share: 0.3\ninterface_min_leaders: 25\n"
+        "language_min_letters: 7\nlanguage_minor_share: 0.3\nhinglish_min_hits: 4\nhinglish_min_share: 0.1\n"
+        "interface_min_leaders: 25\n"
         "reaction_check_confirmed: false\n",
         encoding="utf-8",
     )
 
-    assert load_settings(path) == CleaningSettings(LanguageSettings(7, 0.3), 25, False)
+    assert load_settings(path) == CleaningSettings(LanguageSettings(7, 0.3, 4, 0.1), 25, False)
 
 
 def test_a_missing_settings_key_is_named(tmp_path: Path) -> None:
@@ -224,3 +225,15 @@ def test_candidate_lines_that_a_spreadsheet_would_run_as_a_formula_are_defused()
 
     assert "'=<n>+<n>" in candidates["pattern"].to_list()
     assert not any(pattern.startswith("=") for pattern in candidates["pattern"])
+
+
+def test_render_report_documents_the_hinglish_method() -> None:
+    text = render_report(
+        cells=10, removed=0, rule_table={}, applied=set(), unclassified=0, age_parsed=8,
+        languages={"English": 8, "Hinglish": 2}, reaction_shape={"own_line": 0, "total": 0},
+        reaction_confirmed=False, language_settings=LANGUAGE,
+    )
+
+    assert "Possible Hinglish" in text
+    assert "src/hinglish.py" in text
+    assert "| Hinglish | 2 |" in text

@@ -84,3 +84,13 @@ Format: date, who decided, what, why. Gate sign-offs need a human name.
 - 2026-11-09 (Step 5, found by Claude Code): the first run of the no-network test, before the guard existed, made a real DNS lookup attempt from the test run. That is why the runtime guard is autouse rather than opt-in.
 - 2026-11-09 (Step 5, security decision by Claude Code, an automated review flagged spreadsheet formula injection): data/derived/interface_candidates.csv is meant to be opened by a person in a spreadsheet, and its lines come from posts, so text starting with =, +, - or @ is now prefixed with a quote (same helper as the other human-read files). data/interim/posts_clean.csv is deliberately NOT changed: it feeds the analysis, a leading quote would alter the text the measures see, and it is read by code, not opened in a spreadsheet. Anyone who opens posts_clean.csv in a spreadsheet should import it as text.
 - 2026-11-09 (Step 1 of the second block, history rewrite, approved by the owner): `reports/extra_features.md` was removed from all git history with git filter-repo, so the three commits named in the HISTORY LIST finding above no longer exist and every later commit hash changed. The file was regenerated without ids and committed again. A backup bundle of the pre-rewrite repo was made outside the repo folder (kept by the owner, not committed). Local main now has 0 hits for each of the 50 old ids and no commit that touches the old file version; verified with a per-id history search (counts only). The remote still holds the old history until the force-push, so any clone or fork made before the push keeps the old ids and must be deleted or re-cloned. The old ids were never mapped to leaders in any committed file.
+
+## 2026-11-09, language flag: possible Hinglish (second block, step 2)
+Hindi written in Latin letters is no longer counted as English. A cell that is mostly Latin letters is flagged
+`Hinglish` when at least 3 of its Latin-letter words and at least 10% of them are on a list of common romanised
+Hindi function words (`src/hinglish.py`; thresholds `hinglish_min_hits`, `hinglish_min_share` in
+`configs/thresholds.yaml`). Words that are also common English words are left off, so some Hinglish is missed.
+Counts over 22,023 cells: English 21,926, Hinglish 25, mixed 62, Hindi 1, other 9 (`reports/post_cleaning.md`).
+Findings: only 25 cells are flagged, fewer than the 30 asked for the precision check, so `make hinglish-check`
+draws all 25 into a git-ignored file. Precision (count right) is NOT filled in: it needs a human reading the text,
+and post text is not printed in tool output. The thresholds were not tuned after seeing the counts.

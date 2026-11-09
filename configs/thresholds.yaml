@@ -23,9 +23,13 @@ company_columns_top_n: 20
 # reaction_check_confirmed is a HUMAN switch: set it to true only after the Step A hand comparison is reported.
 language_min_letters: 20
 language_minor_share: 0.2
+hinglish_min_hits: 3
+hinglish_min_share: 0.10
 interface_min_leaders: 25
 reaction_check_confirmed: false
 segmentation_check_seed: 20261107
+hinglish_check_cells: 30
+hinglish_check_seed: 20261109
 
 # Step 5 (scraping and expansion). A HUMAN switch, like reaction_check_confirmed. Keep false until the course mentors approves
 # in writing. While false, tests/test_no_network.py fails if any pipeline code imports a network library or opens a
