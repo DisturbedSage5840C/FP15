@@ -10,6 +10,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
+from src.harmonise_report import SUPERSEDED_LEADER_NOTE
 from src.ids import PAIRS, run
 from src.verify_raw import MANIFEST_NAME
 
@@ -85,6 +86,12 @@ def test_report_carries_no_names_and_no_row_refs(raw_dir: Path, interim: Path, t
     for name in NAMES:
         assert name not in text
     assert "row:" not in text
+
+
+def test_report_marks_the_owner_leader_figure_as_superseded(raw_dir: Path, interim: Path, tmp_path: Path) -> None:
+    _, report = _go(raw_dir, interim, tmp_path)
+
+    assert SUPERSEDED_LEADER_NOTE in report.read_text(encoding="utf-8")
 
 
 def test_report_names_the_summary_workbooks_by_path_and_sheet_index(raw_dir: Path, interim: Path, tmp_path: Path) -> None:

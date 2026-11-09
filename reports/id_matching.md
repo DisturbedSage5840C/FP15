@@ -63,6 +63,8 @@ Outcomes are counted per entity of side a. Ambiguous names are listed in data/in
 | Company_Data rows | 852 | 852 | +0 |
 | summary names (distinct keys) | 532 | 532 | +0 |
 
+The owner's leader figure of 544 is superseded, see Findings in docs/decisions.md (the owner's corrected count is 567 and is not comparable with ours until posts are segmented).
+
 A non-zero difference is a finding to explain with the owner, not something fixed by this step.
 
 ## leader_id proposal

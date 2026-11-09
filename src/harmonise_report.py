@@ -30,6 +30,10 @@ OWNER_FIGURES = (
     ("Unique posts after dedupe", 22083),
     ("Leaders", 544),
 )
+SUPERSEDED_LEADER_NOTE = (
+    "The owner's leader figure of 544 is superseded, see Findings in docs/decisions.md "
+    "(the owner's corrected count is 567 and is not comparable with ours until posts are segmented)."
+)
 
 
 def _fmt(number: int) -> str:
@@ -83,6 +87,8 @@ def _headline(result: HarmonisedResult, log: pd.DataFrame) -> list[str]:
             ("Measure", "Owner's figure", "Raw post_text workbooks", "Difference", "Cleaned workbooks", "All"),
             rows,
         ),
+        "",
+        SUPERSEDED_LEADER_NOTE,
         "",
         "The wordcount workbooks carry `cleaned_post_text`, a cleaned copy of posts that also sit in the "
         "raw `post_text` workbooks. The owner's figures are compared with the raw post_text workbooks only. "

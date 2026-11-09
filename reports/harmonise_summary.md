@@ -11,6 +11,8 @@ Counts, file paths and sheet indexes only; no names and no post text.
 | Unique posts after dedupe | 22,083 | 22,023 | -60 | 26,088 | 48,111 |
 | Leaders | 544 | 563 | +19 | 540 | 564 |
 
+The owner's leader figure of 544 is superseded, see Findings in docs/decisions.md (the owner's corrected count is 567 and is not comparable with ours until posts are segmented).
+
 The wordcount workbooks carry `cleaned_post_text`, a cleaned copy of posts that also sit in the raw `post_text` workbooks. The owner's figures are compared with the raw post_text workbooks only. Raw and cleaned rows are kept apart by `text_kind` and are not deduplicated against each other, so the All column counts the same post twice.
 
 Rows lost at the leader step: 268. Duplicates removed: 15,662. Differences are reported, not forced: they come from sheets skipped with a reason (below), rows dropped on the combined sheet for lack of a leader, and the dedupe rule.

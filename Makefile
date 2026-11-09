@@ -1,6 +1,6 @@
 PY ?= .venv/bin/python
 
-.PHONY: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns segment test all
+.PHONY: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric segment test all
 check-key: ## fail with a clear message unless FP15_ID_KEY is set (environment or git-ignored .env); the value is never shown
 	$(PY) -m src.id_key
 verify:   ## check raw hash manifest (writes it on first run)
@@ -22,8 +22,10 @@ extra-features: check-key ## propose which text features are reliable and list c
 	$(PY) -m src.extra_features
 company-columns: ## propose the 20 most useful Company_Data columns and their fill share for leaders with 15+ posts (reports/company_columns.md)
 	$(PY) -m src.company_columns
+company-numeric: ## numeric LatestRevenueUSD, NumberofEmployees and ProfitUSD2024 (reports/company_numeric.md)
+	$(PY) -m src.company_numeric
 segment:  ## split cells into author blocks and clean
 	$(PY) -m src.segment
 test:
 	$(PY) -m pytest -q
-all: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns segment test
+all: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric segment test

@@ -2,7 +2,7 @@
 import pandas as pd
 
 from src.harmonise import HarmonisedResult
-from src.harmonise_report import SPOT_CHECK_SHEETS, render_report
+from src.harmonise_report import SPOT_CHECK_SHEETS, SUPERSEDED_LEADER_NOTE, render_report
 
 LOG_DEFAULTS = {
     "status": "used", "reason": "", "is_combined": False, "method": "header", "text_kind": "raw",
@@ -60,6 +60,13 @@ def test_report_starts_with_the_title_and_compares_with_the_owner_figures() -> N
 
     assert text.startswith("# Harmonise summary")
     assert "32,448" in text and "22,083" in text and "544" in text and "705" in text
+
+
+def test_report_marks_the_owner_leader_figure_as_superseded() -> None:
+    text = render_report(_basic(), _roster())
+
+    assert SUPERSEDED_LEADER_NOTE in text
+    assert "superseded, see Findings" in SUPERSEDED_LEADER_NOTE
 
 
 def test_skipped_sheets_are_grouped_by_reason_with_file_and_index() -> None:

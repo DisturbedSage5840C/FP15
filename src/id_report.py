@@ -7,7 +7,7 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Mapping, Sequence
 
-from src.harmonise_report import _fmt, _pct, _table
+from src.harmonise_report import SUPERSEDED_LEADER_NOTE, _fmt, _pct, _table
 from src.id_matching import AMBIGUOUS, CLEAR, EXACT, Entity, Match, PairSummary, ProposalRow, duplicate_keys
 from src.id_sources import SOURCE_COMPANY, SOURCE_ROSTER, SOURCE_SHEETS, SOURCE_SUMMARIES, SummarySheet
 
@@ -105,7 +105,16 @@ def _owner_section(sources: Mapping[str, Sequence[Entity]], pairs: Sequence[Pair
         _compare_row("summary names (distinct keys)", OWNER_SUMMARY_NAMES, len(summaries)),
     ]
     note = "A non-zero difference is a finding to explain with the owner, not something fixed by this step."
-    return ["## Owner figures versus ours", "", *_table(("measure", "owner", "ours", "difference"), rows), "", note, ""]
+    return [
+        "## Owner figures versus ours",
+        "",
+        *_table(("measure", "owner", "ours", "difference"), rows),
+        "",
+        SUPERSEDED_LEADER_NOTE,
+        "",
+        note,
+        "",
+    ]
 
 
 def _proposal_section(proposal: Sequence[ProposalRow]) -> list[str]:
