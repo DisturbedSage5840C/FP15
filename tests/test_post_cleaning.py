@@ -213,3 +213,14 @@ def test_main_returns_the_exit_code_of_run(monkeypatch: pytest.MonkeyPatch) -> N
     monkeypatch.setattr(post_cleaning, "run", lambda: 0)
 
     assert post_cleaning.main([]) == 0
+
+
+def test_candidate_lines_that_a_spreadsheet_would_run_as_a_formula_are_defused() -> None:
+    cells = pd.DataFrame(
+        {"leader": ["Ann Rao", "Bo Lee"], "post_text": ["=1+1\nPlain", "=1+1\nPlain"]}
+    )
+
+    candidates = post_cleaning._candidates_frame(cells, min_leaders=2)
+
+    assert "'=<n>+<n>" in candidates["pattern"].to_list()
+    assert not any(pattern.startswith("=") for pattern in candidates["pattern"])

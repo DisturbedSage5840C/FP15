@@ -35,7 +35,7 @@ from src.post_interface import (
     line_frequencies,
     rule_counts,
 )
-from src.reaction_count_check import RAW_KIND, _read_posts, find_trailing_number
+from src.reaction_count_check import RAW_KIND, _read_posts, find_trailing_number, spreadsheet_safe
 from src.verify_raw import DEFAULT_RAW_DIR, ManifestMismatch
 from src.verify_raw import run as verify_raw
 
@@ -237,9 +237,14 @@ def _report_inputs(cells: pd.DataFrame, clean: pd.DataFrame, settings: CleaningS
 
 
 def _candidates_frame(cells: pd.DataFrame, min_leaders: int) -> pd.DataFrame:
+    """Frequent unclassified lines for a human to read in a spreadsheet, so formula-like text is defused.
+
+    posts_clean.csv is not defused: it feeds the analysis, and a leading quote would change the text measured.
+    """
     keyed = list(zip(cells["leader"].map(name_key), cells["post_text"]))
     found = unclassified_patterns(keyed, min_leaders)
-    return pd.DataFrame([(p.pattern, p.lines, p.leaders) for p in found], columns=["pattern", "lines", "leaders"])
+    rows = [(spreadsheet_safe(p.pattern), p.lines, p.leaders) for p in found]
+    return pd.DataFrame(rows, columns=["pattern", "lines", "leaders"])
 
 
 def _raw_cells(posts: pd.DataFrame) -> pd.DataFrame:
