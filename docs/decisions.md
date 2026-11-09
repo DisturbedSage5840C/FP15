@@ -119,3 +119,14 @@ same text head covers different text, so the looser key cannot stand in for post
 conservative rule (identical, prefix, or same LinkedIn post URL with only a trailing number or age line
 differing) replaces it at cell level; real post-level deduplication waits until after segmentation. Reading what
 the "other" groups hold is a human job and is not done here.
+
+## 2026-11-09: conservative cell-level dedupe replaces the looser key (step 2)
+
+The looser key (leader and link, else leader and the first 200 characters) no longer deletes rows. It only forms
+candidate groups (see Findings above: most content-different groups are neither a prefix nor a trailing-number
+change). Inside a group a row is collapsed only when (a) the raw text is identical, (b) one text is the start of the
+other (the longer is kept) or (c) the group is one LinkedIn post URL and the texts differ only in a trailing number or
+age line. Every other row is kept. New columns in `data/interim/harmonised_posts.csv`: `n_versions` (rows merged into
+a kept row, replaces `n_copies`), `dup_group_id` (sequential, carries no name or link) and `dup_candidate` (the
+group still holds more than one kept row). Real post-level deduplication happens after segmentation, not here.
+Rules are in `src/dedup_rules.py`; counts will be refreshed in the rebuild (step 3).

@@ -5,19 +5,23 @@ Rules (project owner, recorded in docs/decisions.md):
   * in every other sheet a blank leader cell means the sheet name is the leader (an ASSUMPTION,
     spot-checked in the report); a sheet whose filled cells hold two or more distinct leaders is
     treated like the combined sheet; nothing is forward-filled;
-  * duplicates are removed on (leader, link if present else the first 200 characters of text).
+  * duplicates are collapsed cell by cell only when certain (identical text, one text the start of the other,
+    or the same LinkedIn post URL differing only in a trailing number or age line); the looser key (leader and
+    link, else the first 200 characters) only forms candidate groups, and every other row is kept and flagged.
 Nothing is guessed: missing stays missing, skipped sheets carry a written reason.
 """
 from __future__ import annotations
 
 import logging
 import sys
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import cast
 
 import pandas as pd
 
+from src.dedup_rules import collapse_group, link_type
 from src.harmonise_plan import SheetPlan, plan_sheet
 from src.harmonise_report import render_report
 from src.loader import SheetRecord, load_zip_workbooks
@@ -44,7 +48,7 @@ SCHEMA_COLUMNS = (
     *ROLE_COLUMNS[:9], "batch", "sheet", "workbook", "sheet_idx", "source_row",
     *ROLE_COLUMNS[9:], "post_date_is_text", "text_kind", "leader_source",
 )
-POST_COLUMNS = (*SCHEMA_COLUMNS, "n_copies")
+POST_COLUMNS = (*SCHEMA_COLUMNS, "n_versions", "dup_group_id", "dup_candidate")
 ROSTER_BY_HEADER = {
     "companyname": "company", "person_name": "person_name", "current_title": "title",
     "linkedin_profile_link": "profile_url", "person_id": "person_id",
@@ -160,11 +164,32 @@ def dedupe_keys(posts: pd.DataFrame) -> pd.Series:
     )
 
 
+def _is_post_url_group(key: str, link: object) -> bool:
+    return "|L|" in key and link_type(str(link)) == "linkedin_post"
+
+
 def drop_duplicates(posts: pd.DataFrame) -> pd.DataFrame:
-    """Keep the first copy of each (leader, link-or-text-head) post and count the copies."""
-    keys = dedupe_keys(posts)
-    counted = posts.assign(n_copies=keys.map(keys.value_counts()))
-    return counted.loc[~keys.duplicated()].reset_index(drop=True)
+    """Collapse only certain duplicates (src/dedup_rules.py) inside each looser-key group; keep every other row.
+
+    The looser key only forms candidate groups. Adds n_versions (rows merged into a kept row), dup_group_id
+    (sequential, no name or link in it) and dup_candidate (the group still holds more than one kept row).
+    """
+    base = posts.reset_index(drop=True)
+    keys = dedupe_keys(base)
+    codes = pd.factorize(keys)[0]
+    texts = [str(t) for t in base["post_text"]]
+    kept: list[tuple[int, int, int]] = []  # (row position, group code, n_versions)
+    for code, members in pd.Series(range(len(base))).groupby(codes, sort=True):
+        positions = members.to_list()
+        is_post = _is_post_url_group(keys.iloc[positions[0]], base["link"].iloc[positions[0]])
+        kept += [(positions[i], int(code), n) for i, n in collapse_group([texts[p] for p in positions], is_post)]
+    kept.sort()
+    kept_per_group = Counter(code for _, code, _ in kept)
+    return base.iloc[[row for row, _, _ in kept]].assign(
+        n_versions=[n for _, _, n in kept],
+        dup_group_id=[f"D{code + 1:06d}" for _, code, _ in kept],
+        dup_candidate=[kept_per_group[code] > 1 for _, code, _ in kept],
+    ).reset_index(drop=True)
 
 
 def _log_entry(

@@ -177,22 +177,53 @@ def _posts(entries: Sequence[tuple[str, str | None, str]]) -> pd.DataFrame:
     )
 
 
-def test_duplicates_are_found_on_leader_and_link_when_a_link_exists() -> None:
+def test_a_text_that_is_the_start_of_another_is_collapsed_and_the_longer_is_kept() -> None:
+    posts = _posts([("Ann Rao", "http://x", "version one"), ("rao ann", "http://x", "version one and more")])
+
+    kept = drop_duplicates(posts)
+
+    assert list(kept["post_text"]) == ["version one and more"]
+    assert list(kept["n_versions"]) == [2]
+    assert list(kept["dup_candidate"]) == [False]
+
+
+def test_rows_with_different_content_under_one_link_are_all_kept_and_flagged() -> None:
     posts = _posts([("Ann Rao", "http://x", "version one"), ("rao ann", "http://x", "different text")])
 
     kept = drop_duplicates(posts)
 
-    assert list(kept["post_text"]) == ["version one"]
-    assert list(kept["n_copies"]) == [2]
+    assert list(kept["post_text"]) == ["version one", "different text"]
+    assert list(kept["n_versions"]) == [1, 1]
+    assert list(kept["dup_candidate"]) == [True, True]
+    assert kept["dup_group_id"].nunique() == 1
 
 
-def test_duplicates_without_a_link_use_the_first_200_characters() -> None:
+def test_identical_texts_collapse_and_are_counted() -> None:
+    posts = _posts([("Ann", "l", "same"), ("Ann", "l", "same"), ("Ann", "l", "same")])
+
+    kept = drop_duplicates(posts)
+
+    assert len(kept) == 1 and list(kept["n_versions"]) == [3]
+
+
+def test_trailing_number_variants_collapse_only_for_a_linkedin_post_url() -> None:
+    post_url = "https://www.linkedin.com/posts/x_1"
+    posts = _posts([("Ann", post_url, "Body\n12"), ("Ann", post_url, "Body\n15"), ("Bo", "http://x", "Body\n12"),
+                    ("Bo", "http://x", "Body\n15")])
+
+    kept = drop_duplicates(posts)
+
+    assert list(kept["leader"]) == ["Ann", "Bo", "Bo"]
+
+
+def test_duplicates_without_a_link_group_on_the_first_200_characters() -> None:
     head = "x" * 200
     posts = _posts([("Ann", None, head + "tail one"), ("Ann", None, head + "tail two"), ("Ann", None, "other")])
 
     kept = drop_duplicates(posts)
 
-    assert len(kept) == 2 and list(kept["n_copies"]) == [2, 1]
+    assert len(kept) == 3
+    assert list(kept["dup_candidate"]) == [True, True, False]
 
 
 def test_same_text_by_different_leaders_is_not_a_duplicate() -> None:
@@ -201,13 +232,29 @@ def test_same_text_by_different_leaders_is_not_a_duplicate() -> None:
     assert len(drop_duplicates(posts)) == 2
 
 
-def test_dedupe_keeps_the_first_occurrence_and_resets_the_index() -> None:
-    posts = _posts([("Ann", "l", "first"), ("Ann", "l", "second"), ("Bob", "m", "third")])
+def test_dedupe_keeps_the_first_of_identical_rows_and_resets_the_index() -> None:
+    posts = _posts([("Ann", "l", "first"), ("Ann", "l", "first"), ("Bob", "m", "third")])
 
     kept = drop_duplicates(posts)
 
     assert list(kept["post_text"]) == ["first", "third"]
     assert list(kept.index) == [0, 1]
+
+
+def test_dup_group_ids_are_sequential_and_carry_no_name_or_link() -> None:
+    posts = _posts([("Ann", "http://x", "a"), ("Bob", "http://y", "b")])
+
+    kept = drop_duplicates(posts)
+
+    assert list(kept["dup_group_id"]) == ["D000001", "D000002"]
+
+
+def test_dedupe_does_not_change_its_input() -> None:
+    posts = _posts([("Ann", "l", "same"), ("Ann", "l", "same")])
+
+    drop_duplicates(posts)
+
+    assert len(posts) == 2 and "n_versions" not in posts.columns
 
 
 # ------------------------------------------------------------ harmonise_records
@@ -264,7 +311,7 @@ def test_duplicate_across_combined_and_leader_sheet_is_dropped_once() -> None:
     posts = harmonise_records(_workbook_records()).posts
 
     assert (posts["post_text"] == "a2").sum() == 1
-    assert posts.loc[posts["post_text"] == "a2", "n_copies"].iloc[0] == 2
+    assert posts.loc[posts["post_text"] == "a2", "n_versions"].iloc[0] == 2
 
 
 def test_unreadable_workbook_is_logged_as_skipped() -> None:

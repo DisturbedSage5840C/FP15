@@ -19,7 +19,7 @@ def _posts(n: int = 3, **overrides: list[object]) -> pd.DataFrame:
     base: dict[str, list[object]] = {
         "leader": [f"Person {i}" for i in range(n)], "text_kind": ["raw"] * n,
         "post_date_is_text": [False] * n, "age_text": [None] * n, "post_date": [None] * n,
-        "post_date_text": [None] * n, "role_start_year": [None] * n, "n_copies": [1] * n,
+        "post_date_text": [None] * n, "role_start_year": [None] * n, "n_versions": [1] * n,
     }
     return pd.DataFrame({**base, **overrides}, dtype=object)
 

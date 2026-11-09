@@ -80,3 +80,20 @@ def collapses_into(kept: str, row: str, is_post_url: bool) -> bool:
     if flat_row and _flat(kept).startswith(flat_row):
         return True
     return is_post_url and strip_trailing(kept) != "" and strip_trailing(kept) == strip_trailing(row)
+
+
+def collapse_group(texts: Sequence[str], is_post_url: bool) -> list[tuple[int, int]]:
+    """Apply the conservative rule inside one group: [(position of a kept text, n_versions)] in position order.
+
+    Texts are taken longest first (ties by position), so the kept text is the longer one and a collapsed row
+    adds one to the kept row's n_versions. A row matching no rule is kept as its own entry.
+    """
+    order = sorted(range(len(texts)), key=lambda i: (-len(texts[i]), i))
+    versions: dict[int, int] = {}
+    for position in order:
+        target = next((k for k in versions if collapses_into(texts[k], texts[position], is_post_url)), None)
+        if target is None:
+            versions[position] = 1
+        else:
+            versions[target] += 1
+    return sorted(versions.items())

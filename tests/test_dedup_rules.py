@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.dedup_rules import collapses_into, link_type, relation, strip_trailing
+from src.dedup_rules import collapse_group, collapses_into, link_type, relation, strip_trailing
 
 
 @pytest.mark.parametrize(
@@ -64,3 +64,20 @@ def test_trailing_number_difference_collapses_only_for_a_post_url() -> None:
 
 def test_different_content_does_not_collapse() -> None:
     assert not collapses_into("One thing", "Another thing", is_post_url=True)
+
+
+def test_collapse_group_keeps_the_longer_text_and_counts_versions() -> None:
+    kept = collapse_group(["Start", "Start and more", "Start and more"], is_post_url=False)
+
+    assert kept == [(1, 3)]
+
+
+def test_collapse_group_keeps_every_row_that_matches_no_rule() -> None:
+    kept = collapse_group(["One thing", "Another thing", "One thing"], is_post_url=True)
+
+    assert kept == [(0, 2), (1, 1)]
+
+
+def test_collapse_group_merges_trailing_number_variants_for_a_post_url() -> None:
+    assert collapse_group(["Body\n12", "Body\n15"], is_post_url=True) == [(0, 2)]
+    assert collapse_group(["Body\n12", "Body\n15"], is_post_url=False) == [(0, 1), (1, 1)]
