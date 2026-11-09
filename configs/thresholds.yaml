@@ -26,3 +26,8 @@ language_minor_share: 0.2
 interface_min_leaders: 25
 reaction_check_confirmed: false
 segmentation_check_seed: 20261107
+
+# Step 5 (scraping and expansion). A HUMAN switch, like reaction_check_confirmed. Keep false until the course mentors approves
+# in writing. While false, tests/test_no_network.py fails if any pipeline code imports a network library or opens a
+# connection. Do not set true on your own: see docs/scraping_spec.md for what must be answered first.
+scraping_approved: false
