@@ -41,6 +41,7 @@ One make target per stage. Scripts produce every result; there are no notebooks.
 | `make ingest` | Harmonises the post sheets and profiles Company_Data (email and phone columns dropped at load) | `reports/harmonise_summary.md`, `reports/company_data_profile.md` |
 | `make ids` | Proposes `leader_id` matches across the roster, summaries and Company_Data; ambiguous names are not auto-resolved | `reports/id_matching.md` |
 | `make leader-table` | Builds the base list of leaders who have posts and looks each one up in the roster, summaries and Company_Data; names found only in those lists are counted, not resolved | `reports/leader_table.md` |
+| `make handcheck` | Lists the leaders whose Company_Data match is ambiguous, missing or has a different company, with candidate rows side by side and empty decision columns for a human | `data/derived/handcheck_names.csv` (git-ignored; holds names) |
 | `make reaction-check` | Counts trailing-number shapes in raw posts and draws a 50-cell hand-check sample | `reports/reaction_count_check.md` |
 | `make extra-features` | Proposes which text features can be computed reliably, with failure examples | `reports/extra_features.md` |
 | `make company-columns` | Proposes the 20 most useful Company_Data columns and their fill share for leaders with 15+ posts | `reports/company_columns.md` |
