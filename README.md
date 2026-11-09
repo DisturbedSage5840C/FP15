@@ -46,7 +46,9 @@ One make target per stage. Scripts produce every result; there are no notebooks.
 | `make reaction-check` | Counts trailing-number shapes in raw posts and draws a 50-cell hand-check sample | `reports/reaction_count_check.md` |
 | `make extra-features` | Proposes which text features can be computed reliably, with failure examples | `reports/extra_features.md` |
 | `make company-columns` | Proposes the 20 most useful Company_Data columns and their fill share for leaders with 15+ posts | `reports/company_columns.md` |
-| `make segment` | Splits cells into author blocks and cleans them. **Not written yet.** | none |
+| `make post-cleaning` | Drops exact duplicate cells within a leader, removes applied interface lines into a NEW column, parses relative age to months (not a date), flags language by script, and marks reaction counts `unverified` until a human confirms Step A | `data/interim/posts_clean.csv` and `data/derived/interface_candidates.csv` (git-ignored), `reports/post_cleaning.md` |
+| `make segmentation-sample` | Draws the blind 200-cell sample (one cell per leader) with empty human columns; never overwrites an existing sample. The segmenter is NOT run on all cells until the sample is confirmed | `data/derived/segmentation_check_200.csv` (git-ignored) |
+| `make segmentation-score` | Compares the human counts with the segmenter. Reports a fact, does not sign off G1. Not part of `make all` | `reports/segmentation_check.md` |
 | `make test` | Runs the test suite | none |
 | `make all` | Runs the stages above in order | all reports |
 
@@ -56,7 +58,7 @@ Tests: `.venv/bin/python -m pytest -q --cov=src --cov-report=term-missing`.
 
 Done: raw hash check, inventory, harmonising, Company_Data loading, `leader_id` proposal, leader table (base list), reaction-count check, extra text features, Company_Data column proposal.
 
-Not started: segmentation (author blocks), the three measurement layers, gold set, models. See `docs/decisions.md`.
+Not started: running the segmenter on all cells (waits for the human-checked sample), the three measurement layers, gold set, models. See `docs/decisions.md`.
 
 Known caveats, all logged under Findings in `docs/decisions.md`:
 

@@ -18,3 +18,11 @@ extra_features_seed: 20261107
 
 # Step C (Company_Data columns). Length of the proposed list; not a pass mark.
 company_columns_top_n: 20
+
+# Step 4 (post cleaning and segmentation). Settings, not pass marks.
+# reaction_check_confirmed is a HUMAN switch: set it to true only after the Step A hand comparison is reported.
+language_min_letters: 20
+language_minor_share: 0.2
+interface_min_leaders: 25
+reaction_check_confirmed: false
+segmentation_check_seed: 20261107
