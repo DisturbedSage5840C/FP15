@@ -1,6 +1,6 @@
 PY ?= .venv/bin/python
 
-.PHONY: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric post-cleaning segmentation-sample hinglish-check dedup-check segmentation-score test all
+.PHONY: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric post-cleaning segmentation-sample hinglish-check dedup-check dedup-characterise segmentation-score test all
 check-key: ## fail with a clear message unless FP15_ID_KEY is set (environment or git-ignored .env); the value is never shown
 	$(PY) -m src.id_key
 verify:   ## check raw hash manifest (writes it on first run)
@@ -32,6 +32,9 @@ hinglish-check: check-key ## draw 30 flagged cells for the human precision check
 	$(PY) -m src.hinglish_check
 dedup-check: check-key ## count what the looser dedupe key collapsed (reports/dedup_check.md); changes nothing
 	$(PY) -m src.dedup_check
+
+dedup-characterise: check-key ## describe the content-different groups: size, link type, how texts differ (reports/dedup_characterisation.md)
+	$(PY) -m src.dedup_characterise
 segmentation-score: ## compare the human counts with the segmenter (reports/segmentation_check.md); does NOT sign off G1; not part of make all
 	$(PY) -m src.segment_score
 test:

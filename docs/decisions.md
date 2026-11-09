@@ -103,3 +103,19 @@ in punctuation, 0 in spacing or case, and 3,608 with different content (12,346 o
 link, 615 on the first 200 characters; in 184 the shorter text is the start of the longer). Nothing was changed:
 the dedupe rule, `harmonised_posts.csv` and every downstream table are as before. STOPPED here per the owner's
 instruction; what to do about the content-different groups is a decision for the owner.
+
+## Findings, 2026-11-09: what the content-different groups look like (third block, step 1)
+
+`make dedup-characterise` writes `reports/dedup_characterisation.md` (counts only). Of the 3,608 groups the looser
+key collapsed although their texts differ in content (15,954 rows):
+- Size: 1,589 held 2 rows, 89 held 3, 1,739 held 4, 191 held 5 or more. Groups of 4 are as common as pairs.
+- Link type (domain and path only): 2,991 LinkedIn post URLs, 2 other domain, 615 no link (keyed on the first 200
+  characters of text), 0 LinkedIn profile or company URLs.
+- How the texts differ: 23 only in the trailing number or age line, 182 where one text is the start of the other,
+  0 identical after removing the first N lines, 3,403 other.
+
+So the large majority (3,403 of 3,608) are neither a trailing-number change nor a prefix. The same link or the
+same text head covers different text, so the looser key cannot stand in for post-level deduplication. The
+conservative rule (identical, prefix, or same LinkedIn post URL with only a trailing number or age line
+differing) replaces it at cell level; real post-level deduplication waits until after segmentation. Reading what
+the "other" groups hold is a human job and is not done here.
