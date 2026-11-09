@@ -6,24 +6,14 @@ Sorted-token name keys, matched across four lists. Loose = all tokens of the sho
 
 | source | file | entities | distinct keys | keys held by 2+ entities |
 |---|---|---|---|---|
-| sheets | data/interim/harmonised_posts.csv (columns leader, workbook, sheet_idx) | 564 | 564 | 0 |
-| roster | data/interim/roster.csv (from seventh_100_leaders/All_500.xlsx, loaded once) | 653 | 652 | 1 |
-| summaries | sheet index 0 of every wordcount_* workbook (listed below) | 541 | 532 | 9 |
-| company | data/interim/company_data.csv (from Company_Data.xlsx) | 852 | 852 | 0 |
+| sheets | harmonised posts table (git-ignored, data/interim) | 564 | 564 | 0 |
+| roster | roster table (git-ignored, data/interim; the roster workbook is loaded once) | 653 | 652 | 1 |
+| summaries | the summary sheet of every wordcount workbook (counted below) | 541 | 532 | 9 |
+| company | company table (git-ignored, data/interim; contact columns dropped at load) | 852 | 852 | 0 |
 
 ## Summary sheets read
 
-| workbook | sheet index | name cells filled |
-|---|---|---|
-| Linkdln_posts_data/Fifth_100_Leaders/wordcount_500.xlsx | 0 | 76 |
-| Linkdln_posts_data/First_100_leaders/wordcount_100.xlsx | 0 | 76 |
-| Linkdln_posts_data/Fourth_100_leaders/wordcount_400.xlsx | 0 | 88 |
-| Linkdln_posts_data/Second_200_leaders/wordcount_200.xlsx | 0 | 75 |
-| Linkdln_posts_data/Sixth_100/wordcount_600.xlsx | 0 | 80 |
-| Linkdln_posts_data/Third_100_leaders/wordcount_300.xlsx | 0 | 75 |
-| Linkdln_posts_data/seventh_100_leaders/wordcount_700.xlsx | 0 | 71 |
-
-Total name cells filled: 541.
+7 summary sheets read. Workbook names and sheet indexes are not listed. Total name cells filled: 541.
 
 ## Pair outcomes
 

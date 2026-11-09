@@ -45,9 +45,10 @@ def test_report_covers_files_members_layouts_and_company_data(raw_dir: Path) -> 
 
     text = build_report(raw_dir)
 
-    assert "Company_Data.xlsx" in text
-    assert "posts.zip" in text
-    assert "batch/leaders.xlsx" in text
+    assert "raw-file-01" in text
+    assert "2 members (1 pdf, 1 workbook)" in text
+    for file_name in ("Company_Data.xlsx", "posts.zip", "leaders.xlsx", ".xlsx"):
+        assert file_name not in text
     assert "leader_posts_14" in text
     assert "| Email" not in text.split("## Company_Data")[0]
     assert "Email" in text.split("## Company_Data")[1]

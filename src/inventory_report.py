@@ -1,7 +1,8 @@
 """Render the data inventory as markdown from sheet profiles.
 
-Everything here is counts and header labels. Sheet names, cell values and post text never
-reach the output, and author keys appear only as the number of sheets they occur in.
+Everything here is counts and header labels. Sheet names, file and workbook names, sheet
+indexes, cell values and post text never reach the output, and author keys appear only as the
+number of sheets they occur in. Workbooks are labelled workbook-NN in sorted-path order.
 """
 from __future__ import annotations
 
@@ -57,6 +58,11 @@ def _table(headers: Sequence[str], rows: Iterable[Sequence[object]]) -> str:
     return "\n".join(lines)
 
 
+def workbook_labels(profiles: Sequence[SheetProfile]) -> dict[str, str]:
+    """Generic, stable labels (workbook-01, ...) in sorted-path order, so reports carry no file names."""
+    return {name: f"workbook-{i:02d}" for i, name in enumerate(sorted({p.workbook for p in profiles}), start=1)}
+
+
 def _header_profiles(profiles: Sequence[SheetProfile]) -> list[SheetProfile]:
     return [p for p in profiles if p.header_kind == "header"]
 
@@ -72,15 +78,17 @@ def list_zip_members(zip_path: Path) -> tuple[ZipMember, ...]:
 
 
 def render_raw_files(manifest: Mapping[str, str], sizes: Mapping[str, int]) -> str:
-    rows = [(name, f"{sizes.get(name, 0):,}", digest) for name, digest in sorted(manifest.items())]
+    rows = [
+        (f"raw-file-{i:02d}", f"{sizes.get(name, 0):,}", digest)
+        for i, (name, digest) in enumerate(sorted(manifest.items()), start=1)
+    ]
     return _table(["File", "Bytes", "SHA-256 (from MANIFEST.sha256)"], rows)
 
 
 def render_zip_members(members: Sequence[ZipMember]) -> str:
     kinds = Counter(m.kind for m in members)
     summary = ", ".join(f"{count} {kind}" for kind, count in sorted(kinds.items())) or "none"
-    table = _table(["Member", "Bytes", "Kind"], [(m.name, f"{m.size:,}", m.kind) for m in members])
-    return f"{len(members)} members ({summary}).\n\n{table}"
+    return f"{len(members)} members ({summary}). Member names are not listed."
 
 
 def render_workbook_summary(profiles: Sequence[SheetProfile]) -> str:
@@ -89,7 +97,8 @@ def render_workbook_summary(profiles: Sequence[SheetProfile]) -> str:
     for p in profiles:
         sheets[p.workbook] += 1
         rows[p.workbook] += p.n_data_rows
-    body = [(name, f"{sheets[name]:,}", f"{rows[name]:,}") for name in sorted(sheets)]
+    labels = workbook_labels(profiles)
+    body = [(labels[name], f"{sheets[name]:,}", f"{rows[name]:,}") for name in sorted(sheets)]
     return _table(["Workbook", "Sheets", "Data rows"], body)
 
 
@@ -117,17 +126,13 @@ def render_odd_sheets(profiles: Sequence[SheetProfile]) -> str:
     kinds = Counter(_odd_kind(p) for p in odd)
     intro = (
         f"{len(odd)} of {len(profiles):,} sheets have at least one oddity. docs/FIRST_PROMPT.md names 4 "
-        "odd sheets; this table lists every sheet with any oddity, so which four were meant is for the "
-        "project owner to pick out."
+        "odd sheets; the tables below count every sheet with any oddity. Which four were meant is for the "
+        "project owner to pick out; the per-sheet list is in the git-ignored data/interim files."
     )
     kind_table = _table(["Kind of oddity", "Sheets"], kinds.most_common())
-    rows = [
-        (p.workbook, p.position, p.layout, len(p.header_cells) or NO_COLUMN, f"{p.width:,}",
-         f"{p.n_data_rows:,}", "; ".join(p.odd_reasons))
-        for p in odd
-    ]
-    detail = _table(["Workbook", "Sheet #", "Layout", "Header cells", "Frame width", "Data rows", "Reasons"], rows)
-    return f"{intro}\n\n{kind_table}\n\n{detail}"
+    reasons = Counter(reason for p in odd for reason in p.odd_reasons)
+    reason_table = _table(["Reason", "Sheets"], reasons.most_common())
+    return f"{intro}\n\n{kind_table}\n\n{reason_table}"
 
 
 def _spelling_totals(profiles: Sequence[SheetProfile]) -> dict[tuple[str, str, str], tuple[int, int, int]]:
@@ -166,7 +171,8 @@ def render_filled_expected_empty(profiles: Sequence[SheetProfile]) -> str:
                 filled[(p.workbook, raw)] = (count + non_empty, rows + p.n_data_rows)
     if not filled:
         return "role_start_year and every post_date spelling are empty in every workbook."
-    rows_out = [(wb, raw, f"{count:,} / {rows:,}") for (wb, raw), (count, rows) in sorted(filled.items())]
+    labels = workbook_labels(profiles)
+    rows_out = [(labels[wb], raw, f"{count:,} / {rows:,}") for (wb, raw), (count, rows) in sorted(filled.items())]
     return _table(["Workbook", "Column", "Non-empty / rows"], rows_out)
 
 
@@ -235,7 +241,7 @@ def render_report(
         ("Company_Data", render_company_data(company)),
     ]
     intro = (
-        "Counts and header labels only: no sheet names, cell values or post text appear here. Read straight "
+        "Counts and header labels only: no sheet names, file names, sheet indexes, cell values or post text appear here. Read straight "
         "from data/raw after the manifest check; nothing is harmonised, filled in or guessed."
     )
     body = "\n\n".join(f"## {title}\n\n{text}" for title, text in sections)

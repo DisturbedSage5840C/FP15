@@ -1,90 +1,52 @@
 # Data inventory
 
-Counts and header labels only: no sheet names, cell values or post text appear here. Read straight from data/raw after the manifest check; nothing is harmonised, filled in or guessed.
+Counts and header labels only: no sheet names, file names, sheet indexes, cell values or post text appear here. Read straight from data/raw after the manifest check; nothing is harmonised, filled in or guessed.
 
 ## Raw files
 
 | File | Bytes | SHA-256 (from MANIFEST.sha256) |
 |---|---|---|
-| Company_Data.xlsx | 1,024,931 | adfdacb35abde4398d66e2744f53fb35c839b38b09a2aa26f20647a0c43d524f |
-| Linkdln_posts_data_1.zip | 50,365,360 | 3cbf832862dd85f19a9f8728a60ea31b4e9c97c55c8321de5675afeab758c6fb |
+| raw-file-01 | 1,024,931 | adfdacb35abde4398d66e2744f53fb35c839b38b09a2aa26f20647a0c43d524f |
+| raw-file-02 | 50,365,360 | 3cbf832862dd85f19a9f8728a60ea31b4e9c97c55c8321de5675afeab758c6fb |
 
 ## Zip members
 
-35 members (4 pdf, 1 script, 30 workbook).
-
-| Member | Bytes | Kind |
-|---|---|---|
-| Linkdln_posts_data/Fifth_100_Leaders/500_file1.xlsx | 471,444 | workbook |
-| Linkdln_posts_data/Fifth_100_Leaders/500_file2.xlsx | 362,210 | workbook |
-| Linkdln_posts_data/Fifth_100_Leaders/All_500.xlsx | 66,407 | workbook |
-| Linkdln_posts_data/Fifth_100_Leaders/wordcount_500.xlsx | 2,566,544 | workbook |
-| Linkdln_posts_data/First_100_leaders/First_100 posts.xlsx | 20,988 | workbook |
-| Linkdln_posts_data/First_100_leaders/First_file1_updated.xlsx | 437,055 | workbook |
-| Linkdln_posts_data/First_100_leaders/First_file2_updated.xlsx | 271,772 | workbook |
-| Linkdln_posts_data/First_100_leaders/First_file3_updated.xlsx | 203,606 | workbook |
-| Linkdln_posts_data/First_100_leaders/wordcount_100.xlsx | 2,589,649 | workbook |
-| Linkdln_posts_data/Fourth_100_leaders/400_file1_updated_final.xlsx | 909,407 | workbook |
-| Linkdln_posts_data/Fourth_100_leaders/400_file2_updated_Final.xlsx | 661,753 | workbook |
-| Linkdln_posts_data/Fourth_100_leaders/All_500.xlsx | 62,105 | workbook |
-| Linkdln_posts_data/Fourth_100_leaders/wordcount_400.xlsx | 4,552,448 | workbook |
-| Linkdln_posts_data/Leaders_Traits/Chat Gpt response.pdf | 83,658 | pdf |
-| Linkdln_posts_data/Leaders_Traits/Claude_result.pdf | 147,458 | pdf |
-| Linkdln_posts_data/Leaders_Traits/LEO_Internship_Report_Final.pdf | 8,921,013 | pdf |
-| Linkdln_posts_data/Leaders_Traits/PPT_Traits.pdf | 556,595 | pdf |
-| Linkdln_posts_data/Second_200_leaders/Second_100 posts.xlsx | 22,205 | workbook |
-| Linkdln_posts_data/Second_200_leaders/Second_file1_updated.xlsx | 870,818 | workbook |
-| Linkdln_posts_data/Second_200_leaders/Second_file2_updated.xlsx | 386,632 | workbook |
-| Linkdln_posts_data/Second_200_leaders/wordcount_200.xlsx | 3,500,616 | workbook |
-| Linkdln_posts_data/seventh_100_leaders/700_file1.xlsx | 544,740 | workbook |
-| Linkdln_posts_data/seventh_100_leaders/700_file2.xlsx | 660,125 | workbook |
-| Linkdln_posts_data/seventh_100_leaders/All_500.xlsx | 73,977 | workbook |
-| Linkdln_posts_data/seventh_100_leaders/wordcount_700.xlsx | 3,571,200 | workbook |
-| Linkdln_posts_data/Sixth_100/600_file1.xlsx | 1,039,627 | workbook |
-| Linkdln_posts_data/Sixth_100/600_file2.xlsx | 762,505 | workbook |
-| Linkdln_posts_data/Sixth_100/All_500.xlsx | 69,754 | workbook |
-| Linkdln_posts_data/Sixth_100/wordcount_600.xlsx | 10,373,950 | workbook |
-| Linkdln_posts_data/Third_100_leaders/300_file1_updated_final.xlsx | 821,032 | workbook |
-| Linkdln_posts_data/Third_100_leaders/300_file2_updated_final.xlsx | 406,236 | workbook |
-| Linkdln_posts_data/Third_100_leaders/300_file3_updated_final.xlsx | 197,638 | workbook |
-| Linkdln_posts_data/Third_100_leaders/All_500.xlsx | 62,105 | workbook |
-| Linkdln_posts_data/Third_100_leaders/wordcount_300.xlsx | 4,081,840 | workbook |
-| Linkdln_posts_data/Wordcount_code/wordcount_2.py | 29,138 | script |
+35 members (4 pdf, 1 script, 30 workbook). Member names are not listed.
 
 ## Workbooks
 
 | Workbook | Sheets | Data rows |
 |---|---|---|
-| Linkdln_posts_data/Fifth_100_Leaders/500_file1.xlsx | 51 | 1,856 |
-| Linkdln_posts_data/Fifth_100_Leaders/500_file2.xlsx | 51 | 1,643 |
-| Linkdln_posts_data/Fifth_100_Leaders/All_500.xlsx | 1 | 653 |
-| Linkdln_posts_data/Fifth_100_Leaders/wordcount_500.xlsx | 79 | 54,506 |
-| Linkdln_posts_data/First_100_leaders/First_100 posts.xlsx | 1 | 100 |
-| Linkdln_posts_data/First_100_leaders/First_file1_updated.xlsx | 39 | 1,393 |
-| Linkdln_posts_data/First_100_leaders/First_file2_updated.xlsx | 39 | 1,173 |
-| Linkdln_posts_data/First_100_leaders/First_file3_updated.xlsx | 22 | 815 |
-| Linkdln_posts_data/First_100_leaders/wordcount_100.xlsx | 80 | 52,077 |
-| Linkdln_posts_data/Fourth_100_leaders/400_file1_updated_final.xlsx | 51 | 3,047 |
-| Linkdln_posts_data/Fourth_100_leaders/400_file2_updated_Final.xlsx | 51 | 2,832 |
-| Linkdln_posts_data/Fourth_100_leaders/All_500.xlsx | 1 | 653 |
-| Linkdln_posts_data/Fourth_100_leaders/wordcount_400.xlsx | 91 | 92,113 |
-| Linkdln_posts_data/Second_200_leaders/Second_100 posts.xlsx | 1 | 99 |
-| Linkdln_posts_data/Second_200_leaders/Second_file1_updated.xlsx | 62 | 2,879 |
-| Linkdln_posts_data/Second_200_leaders/Second_file2_updated.xlsx | 39 | 1,836 |
-| Linkdln_posts_data/Second_200_leaders/wordcount_200.xlsx | 79 | 69,319 |
-| Linkdln_posts_data/Sixth_100/600_file1.xlsx | 50 | 3,067 |
-| Linkdln_posts_data/Sixth_100/600_file2.xlsx | 51 | 3,062 |
-| Linkdln_posts_data/Sixth_100/All_500.xlsx | 1 | 653 |
-| Linkdln_posts_data/Sixth_100/wordcount_600.xlsx | 86 | 105,725 |
-| Linkdln_posts_data/Third_100_leaders/300_file1_updated_final.xlsx | 61 | 3,213 |
-| Linkdln_posts_data/Third_100_leaders/300_file2_updated_final.xlsx | 27 | 1,556 |
-| Linkdln_posts_data/Third_100_leaders/300_file3_updated_final.xlsx | 14 | 784 |
-| Linkdln_posts_data/Third_100_leaders/All_500.xlsx | 1 | 653 |
-| Linkdln_posts_data/Third_100_leaders/wordcount_300.xlsx | 79 | 82,125 |
-| Linkdln_posts_data/seventh_100_leaders/700_file1.xlsx | 50 | 1,821 |
-| Linkdln_posts_data/seventh_100_leaders/700_file2.xlsx | 51 | 1,766 |
-| Linkdln_posts_data/seventh_100_leaders/All_500.xlsx | 1 | 653 |
-| Linkdln_posts_data/seventh_100_leaders/wordcount_700.xlsx | 75 | 75,686 |
+| workbook-01 | 51 | 1,856 |
+| workbook-02 | 51 | 1,643 |
+| workbook-03 | 1 | 653 |
+| workbook-04 | 79 | 54,506 |
+| workbook-05 | 1 | 100 |
+| workbook-06 | 39 | 1,393 |
+| workbook-07 | 39 | 1,173 |
+| workbook-08 | 22 | 815 |
+| workbook-09 | 80 | 52,077 |
+| workbook-10 | 51 | 3,047 |
+| workbook-11 | 51 | 2,832 |
+| workbook-12 | 1 | 653 |
+| workbook-13 | 91 | 92,113 |
+| workbook-14 | 1 | 99 |
+| workbook-15 | 62 | 2,879 |
+| workbook-16 | 39 | 1,836 |
+| workbook-17 | 79 | 69,319 |
+| workbook-18 | 50 | 3,067 |
+| workbook-19 | 51 | 3,062 |
+| workbook-20 | 1 | 653 |
+| workbook-21 | 86 | 105,725 |
+| workbook-22 | 61 | 3,213 |
+| workbook-23 | 27 | 1,556 |
+| workbook-24 | 14 | 784 |
+| workbook-25 | 1 | 653 |
+| workbook-26 | 79 | 82,125 |
+| workbook-27 | 50 | 1,821 |
+| workbook-28 | 51 | 1,766 |
+| workbook-29 | 1 | 653 |
+| workbook-30 | 75 | 75,686 |
 
 ## Header layouts
 
@@ -100,7 +62,7 @@ Counts and header labels only: no sheet names, cell values or post text appear h
 
 ## Odd sheets
 
-25 of 1,285 sheets have at least one oddity. docs/FIRST_PROMPT.md names 4 odd sheets; this table lists every sheet with any oddity, so which four were meant is for the project owner to pick out.
+25 of 1,285 sheets have at least one oddity. docs/FIRST_PROMPT.md names 4 odd sheets; the tables below count every sheet with any oddity. Which four were meant is for the project owner to pick out; the per-sheet list is in the git-ignored data/interim files.
 
 | Kind of oddity | Sheets |
 |---|---|
@@ -108,33 +70,24 @@ Counts and header labels only: no sheet names, cell values or post text appear h
 | known layout, with stray cells or blank rows | 9 |
 | no-header | 2 |
 
-| Workbook | Sheet # | Layout | Header cells | Frame width | Data rows | Reasons |
-|---|---|---|---|---|---|---|
-| Linkdln_posts_data/Fifth_100_Leaders/All_500.xlsx | 0 | roster_5 | 5 | 7 | 653 | 5 non-empty cell(s) beyond the header |
-| Linkdln_posts_data/Fifth_100_Leaders/wordcount_500.xlsx | 0 | off-layout | 9 | 9 | 76 | off-layout (nearest: summary_8; missing: -; extra: scraped_date) |
-| Linkdln_posts_data/First_100_leaders/First_file1_updated.xlsx | 0 | off-layout | 13 | 13 | 28 | off-layout (nearest: leader_posts_14; missing: post_date_text; extra: -) |
-| Linkdln_posts_data/First_100_leaders/First_file1_updated.xlsx | 1 | off-layout | 13 | 13 | 14 | off-layout (nearest: leader_posts_14; missing: post_date_text; extra: -) |
-| Linkdln_posts_data/First_100_leaders/First_file2_updated.xlsx | 10 | off-layout | 14 | 14 | 110 | off-layout (nearest: leader_posts_14; missing: post_text; extra: -) |
-| Linkdln_posts_data/First_100_leaders/First_file2_updated.xlsx | 25 | off-layout | 5 | 5 | 33 | off-layout (nearest: leader_posts_14; missing: selected_order, excel_data_row_number, excel_file_row_number, leader_name, company_name, current_title, role_start_year, ceo_type, link_to_post_url, linkedin_profile_url; extra: link_to_the_post_(if_available)) |
-| Linkdln_posts_data/First_100_leaders/First_file3_updated.xlsx | 4 | no-header | - | 14 | 2 | no header row (first row is data) |
-| Linkdln_posts_data/First_100_leaders/wordcount_100.xlsx | 3 | off-layout | 11 | 11 | 27 | off-layout (nearest: wordcount_leader_12; missing: post_date_text; extra: -) |
-| Linkdln_posts_data/First_100_leaders/wordcount_100.xlsx | 4 | off-layout | 11 | 11 | 14 | off-layout (nearest: wordcount_leader_12; missing: post_date_text; extra: -) |
-| Linkdln_posts_data/First_100_leaders/wordcount_100.xlsx | 51 | off-layout | 5 | 5 | 25 | off-layout (nearest: wordcount_leader_12; missing: leader_name, company_name, current_title, role_start_year, ceo_type, link_to_post_url, linkedin_profile_url; extra: link_to_the_post_(if_available)) |
-| Linkdln_posts_data/Fourth_100_leaders/400_file1_updated_final.xlsx | 11 | off-layout | 5 | 5 | 184 | off-layout (nearest: leader_posts_14; missing: selected_order, excel_data_row_number, excel_file_row_number, leader_name, company_name, current_title, role_start_year, ceo_type, link_to_post_url, linkedin_profile_url; extra: link_to_the_post_(if_available)) |
-| Linkdln_posts_data/Fourth_100_leaders/All_500.xlsx | 0 | roster_5 | 5 | 7 | 653 | 2 non-empty cell(s) beyond the header |
-| Linkdln_posts_data/Fourth_100_leaders/wordcount_400.xlsx | 13 | off-layout | 5 | 5 | 184 | off-layout (nearest: wordcount_leader_12; missing: leader_name, company_name, current_title, role_start_year, ceo_type, link_to_post_url, linkedin_profile_url; extra: link_to_the_post_(if_available)) |
-| Linkdln_posts_data/Second_200_leaders/Second_100 posts.xlsx | 0 | roster_5 | 5 | 6 | 99 | 2 non-empty cell(s) beyond the header |
-| Linkdln_posts_data/Second_200_leaders/Second_file1_updated.xlsx | 50 | no-header | - | 14 | 97 | no header row (first row is data) |
-| Linkdln_posts_data/Sixth_100/600_file1.xlsx | 38 | leader_posts_14 | 14 | 20 | 9 | 1 non-empty cell(s) beyond the header; 5 blank column(s) beyond the header |
-| Linkdln_posts_data/Sixth_100/600_file2.xlsx | 11 | leader_posts_14 | 14 | 16,384 | 127 | 16370 non-empty cell(s) beyond the header |
-| Linkdln_posts_data/Sixth_100/All_500.xlsx | 0 | roster_5 | 5 | 7 | 653 | 6 non-empty cell(s) beyond the header |
-| Linkdln_posts_data/Sixth_100/wordcount_600.xlsx | 33 | off-layout | 18 | 18 | 6 | off-layout (nearest: wordcount_leader_12; missing: -; extra: 6 unnamed column(s)) |
-| Linkdln_posts_data/Sixth_100/wordcount_600.xlsx | 53 | off-layout | 16382 | 16,382 | 126 | off-layout (nearest: wordcount_leader_12; missing: -; extra: 16370 unnamed column(s)) |
-| Linkdln_posts_data/Third_100_leaders/300_file1_updated_final.xlsx | 1 | leader_posts_14 | 14 | 14 | 0 | 46 blank row(s) above the header |
-| Linkdln_posts_data/Third_100_leaders/300_file2_updated_final.xlsx | 17 | off-layout | 5 | 5 | 9 | off-layout (nearest: leader_posts_14; missing: selected_order, excel_data_row_number, excel_file_row_number, leader_name, company_name, current_title, role_start_year, ceo_type, link_to_post_url, linkedin_profile_url; extra: link_to_the_post_(if_available)) |
-| Linkdln_posts_data/Third_100_leaders/All_500.xlsx | 0 | roster_5 | 5 | 7 | 653 | 2 non-empty cell(s) beyond the header |
-| Linkdln_posts_data/Third_100_leaders/wordcount_300.xlsx | 59 | off-layout | 5 | 5 | 9 | off-layout (nearest: wordcount_leader_12; missing: leader_name, company_name, current_title, role_start_year, ceo_type, link_to_post_url, linkedin_profile_url; extra: link_to_the_post_(if_available)) |
-| Linkdln_posts_data/seventh_100_leaders/All_500.xlsx | 0 | roster_5 | 5 | 7 | 653 | 6 non-empty cell(s) beyond the header |
+| Reason | Sheets |
+|---|---|
+| off-layout (nearest: leader_posts_14; missing: selected_order, excel_data_row_number, excel_file_row_number, leader_name, company_name, current_title, role_start_year, ceo_type, link_to_post_url, linkedin_profile_url; extra: link_to_the_post_(if_available)) | 3 |
+| off-layout (nearest: wordcount_leader_12; missing: leader_name, company_name, current_title, role_start_year, ceo_type, link_to_post_url, linkedin_profile_url; extra: link_to_the_post_(if_available)) | 3 |
+| 2 non-empty cell(s) beyond the header | 3 |
+| off-layout (nearest: leader_posts_14; missing: post_date_text; extra: -) | 2 |
+| no header row (first row is data) | 2 |
+| off-layout (nearest: wordcount_leader_12; missing: post_date_text; extra: -) | 2 |
+| 6 non-empty cell(s) beyond the header | 2 |
+| 5 non-empty cell(s) beyond the header | 1 |
+| off-layout (nearest: summary_8; missing: -; extra: scraped_date) | 1 |
+| off-layout (nearest: leader_posts_14; missing: post_text; extra: -) | 1 |
+| 1 non-empty cell(s) beyond the header | 1 |
+| 5 blank column(s) beyond the header | 1 |
+| 16370 non-empty cell(s) beyond the header | 1 |
+| off-layout (nearest: wordcount_leader_12; missing: -; extra: 6 unnamed column(s)) | 1 |
+| off-layout (nearest: wordcount_leader_12; missing: -; extra: 16370 unnamed column(s)) | 1 |
+| 46 blank row(s) above the header | 1 |
 
 ## Study variables
 
@@ -202,24 +155,24 @@ Not present in this layout: leader_name, company_name, role_start_year, ceo_type
 
 | Workbook | Column | Non-empty / rows |
 |---|---|---|
-| Linkdln_posts_data/Fifth_100_Leaders/wordcount_500.xlsx | Post date | 3,048 / 3,231 |
-| Linkdln_posts_data/First_100_leaders/First_file1_updated.xlsx | post_date | 6 / 14 |
-| Linkdln_posts_data/First_100_leaders/First_file1_updated.xlsx | role_start_year | 6 / 14 |
-| Linkdln_posts_data/First_100_leaders/First_file3_updated.xlsx | post_date | 2 / 353 |
-| Linkdln_posts_data/First_100_leaders/wordcount_100.xlsx | Post date | 2,986 / 3,193 |
-| Linkdln_posts_data/First_100_leaders/wordcount_100.xlsx | post_date | 8 / 362 |
-| Linkdln_posts_data/First_100_leaders/wordcount_100.xlsx | role_start_year | 6 / 14 |
-| Linkdln_posts_data/Fourth_100_leaders/400_file1_updated_final.xlsx | post_date | 6 / 1,224 |
-| Linkdln_posts_data/Fourth_100_leaders/wordcount_400.xlsx | Post date | 5,203 / 5,648 |
-| Linkdln_posts_data/Fourth_100_leaders/wordcount_400.xlsx | post_date | 5 / 1,169 |
-| Linkdln_posts_data/Second_200_leaders/wordcount_200.xlsx | Post date | 4,164 / 4,477 |
-| Linkdln_posts_data/Sixth_100/600_file2.xlsx | post_date | 1 / 127 |
-| Linkdln_posts_data/Sixth_100/600_file2.xlsx | role_start_year | 1 / 127 |
-| Linkdln_posts_data/Sixth_100/wordcount_600.xlsx | Post date | 5,779 / 5,991 |
-| Linkdln_posts_data/Sixth_100/wordcount_600.xlsx | post_date | 1 / 126 |
-| Linkdln_posts_data/Sixth_100/wordcount_600.xlsx | role_start_year | 1 / 126 |
-| Linkdln_posts_data/Third_100_leaders/wordcount_300.xlsx | Post date | 4,990 / 5,343 |
-| Linkdln_posts_data/seventh_100_leaders/wordcount_700.xlsx | Post date | 3,476 / 3,502 |
+| workbook-04 | Post date | 3,048 / 3,231 |
+| workbook-06 | post_date | 6 / 14 |
+| workbook-06 | role_start_year | 6 / 14 |
+| workbook-08 | post_date | 2 / 353 |
+| workbook-09 | Post date | 2,986 / 3,193 |
+| workbook-09 | post_date | 8 / 362 |
+| workbook-09 | role_start_year | 6 / 14 |
+| workbook-10 | post_date | 6 / 1,224 |
+| workbook-13 | Post date | 5,203 / 5,648 |
+| workbook-13 | post_date | 5 / 1,169 |
+| workbook-17 | Post date | 4,164 / 4,477 |
+| workbook-19 | post_date | 1 / 127 |
+| workbook-19 | role_start_year | 1 / 127 |
+| workbook-21 | Post date | 5,779 / 5,991 |
+| workbook-21 | post_date | 1 / 126 |
+| workbook-21 | role_start_year | 1 / 126 |
+| workbook-26 | Post date | 4,990 / 5,343 |
+| workbook-30 | Post date | 3,476 / 3,502 |
 
 ## Author blocks
 

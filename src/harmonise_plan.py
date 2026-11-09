@@ -31,7 +31,7 @@ ROLE_BY_HEADER = {
 }
 AGE_TEXT_ROLE = "age_text"
 NON_POST_LAYOUT_REASONS = {
-    "roster_5": "roster sheet (the roster is loaded once from seventh_100_leaders/All_500.xlsx)",
+    "roster_5": "roster sheet (the roster is loaded once from the roster workbook)",
     "word_frequency_9": "word-frequency sheet (no post text)",
     "summary_8": "summary sheet (no post text)",
 }

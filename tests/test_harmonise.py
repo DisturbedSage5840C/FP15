@@ -296,7 +296,7 @@ def test_every_sheet_gets_a_log_row_and_skipped_sheets_carry_a_reason() -> None:
 
     assert len(log) == 5
     skipped = log[log["status"] == "skipped"]
-    assert sorted(skipped["reason"]) == ["header only, no data rows", "roster sheet (the roster is loaded once from seventh_100_leaders/All_500.xlsx)"]
+    assert sorted(skipped["reason"]) == ["header only, no data rows", "roster sheet (the roster is loaded once from the roster workbook)"]
     assert set(log[log["status"] == "used"]["reason"]) == {""}
 
 

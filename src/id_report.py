@@ -12,10 +12,10 @@ from src.id_matching import AMBIGUOUS, CLEAR, EXACT, Entity, Match, PairSummary,
 from src.id_sources import SOURCE_COMPANY, SOURCE_ROSTER, SOURCE_SHEETS, SOURCE_SUMMARIES, SummarySheet
 
 SOURCE_FILES: dict[str, str] = {
-    SOURCE_SHEETS: "data/interim/harmonised_posts.csv (columns leader, workbook, sheet_idx)",
-    SOURCE_ROSTER: "data/interim/roster.csv (from seventh_100_leaders/All_500.xlsx, loaded once)",
-    SOURCE_SUMMARIES: "sheet index 0 of every wordcount_* workbook (listed below)",
-    SOURCE_COMPANY: "data/interim/company_data.csv (from Company_Data.xlsx)",
+    SOURCE_SHEETS: "harmonised posts table (git-ignored, data/interim)",
+    SOURCE_ROSTER: "roster table (git-ignored, data/interim; the roster workbook is loaded once)",
+    SOURCE_SUMMARIES: "the summary sheet of every wordcount workbook (counted below)",
+    SOURCE_COMPANY: "company table (git-ignored, data/interim; contact columns dropped at load)",
 }
 
 # Figures stated by the project owner, compared with ours. They are targets to explain, not inputs.
@@ -46,10 +46,10 @@ def _source_section(sources: Mapping[str, Sequence[Entity]]) -> list[str]:
 
 
 def _summary_sheet_section(sheets: Sequence[SummarySheet]) -> list[str]:
-    rows = [(s.workbook, s.sheet_idx, _fmt(s.names_filled)) for s in sheets]
     total = sum(s.names_filled for s in sheets)
-    return ["## Summary sheets read", "", *_table(("workbook", "sheet index", "name cells filled"), rows),
-            "", f"Total name cells filled: {_fmt(total)}.", ""]
+    return ["## Summary sheets read", "",
+            f"{_fmt(len(sheets))} summary sheets read. Workbook names and sheet indexes are not listed. "
+            f"Total name cells filled: {_fmt(total)}.", ""]
 
 
 def _agreement(matches: Sequence[Match]) -> tuple[int, int, int]:

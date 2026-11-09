@@ -14,7 +14,7 @@ This repository holds code, tests, configuration, decisions and **count-only rep
 - `data/interim/` and `data/derived/*.csv` are git-ignored. They can hold names, post text and post links.
 - Reports in `reports/` contain counts, column headers and file or sheet indexes. They contain no leader names, company names, cell values, post text or `leader_id` values.
 - The repo is public. No names, post text, links or reversible ids may ever be committed.
-- No scraping or network download of post data is done or approved. The study covers the Indian corporate leaders already in the data. `scraping_approved` in `configs/thresholds.yaml` is a human switch and stays `false` until the course mentors approves in writing; `tests/test_no_network.py` fails if pipeline code reaches the network while it is false. What was asked and what must be answered first: `docs/scraping_spec.md`.
+- No scraping or network download of post data is done or approved. The study covers the Indian corporate leaders already in the data. `scraping_approved` in `configs/thresholds.yaml` is a human switch and stays `false` until the course mentors approve in writing; `tests/test_no_network.py` fails if pipeline code reaches the network while it is false. What was asked and what must be answered first: `docs/scraping_spec.md`.
 
 To reproduce the numbers you need the raw files from the project team; they are not published here.
 

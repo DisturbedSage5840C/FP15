@@ -94,10 +94,14 @@ def test_report_marks_the_owner_leader_figure_as_superseded(raw_dir: Path, inter
     assert SUPERSEDED_LEADER_NOTE in report.read_text(encoding="utf-8")
 
 
-def test_report_names_the_summary_workbooks_by_path_and_sheet_index(raw_dir: Path, interim: Path, tmp_path: Path) -> None:
+def test_report_counts_the_summary_sheets_without_workbook_names_or_sheet_indexes(
+    raw_dir: Path, interim: Path, tmp_path: Path
+) -> None:
     _, report = _go(raw_dir, interim, tmp_path)
 
-    assert "batch/wordcount_100.xlsx" in report.read_text(encoding="utf-8")
+    text = report.read_text(encoding="utf-8")
+    assert "1 summary sheets read" in text
+    assert "wordcount_100" not in text and ".xlsx" not in text
 
 
 def test_matches_table_covers_every_pair_and_holds_no_names(raw_dir: Path, interim: Path, tmp_path: Path) -> None:

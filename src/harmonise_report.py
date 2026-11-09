@@ -1,4 +1,4 @@
-"""Render reports/harmonise_summary.md from a harmonise run (counts, file names, sheet indexes).
+"""Render reports/harmonise_summary.md from a harmonise run (counts only).
 
 The report never carries leader names, sheet names or post text. Sheets are identified by
 workbook path and zero-based sheet index; the full list with sheet names stays in the
@@ -54,13 +54,9 @@ def _table(header: tuple[str, ...], rows: Iterable[tuple[object, ...]]) -> list[
     return lines
 
 
-def _grouped_lines(log: pd.DataFrame) -> list[str]:
-    """One 'workbook: idx, idx' line per workbook."""
-    lines = []
-    for workbook, group in log.groupby("workbook", sort=True):
-        indexes = ", ".join(str(int(i)) for i in sorted(group["sheet_idx"]))
-        lines.append(f"- {workbook}: {indexes}")
-    return lines
+def _count_line(log: pd.DataFrame) -> str:
+    """Counts only: sheets and workbooks. Names and sheet indexes stay in the git-ignored sheet log."""
+    return f"{len(log)} sheets in {log['workbook'].nunique()} workbooks"
 
 
 def _kind_figures(result: HarmonisedResult, log: pd.DataFrame, kind: str | None) -> tuple[int, int, int, int]:
@@ -123,11 +119,11 @@ def _sheet_status(log: pd.DataFrame) -> list[str]:
 
 def _skipped_section(log: pd.DataFrame) -> list[str]:
     skipped = log[log["status"] == "skipped"]
-    lines = ["## Skipped sheets and why (workbook: sheet index)", ""]
+    lines = ["## Skipped sheets and why", ""]
     if skipped.empty:
         return [*lines, "No sheet was skipped."]
     for reason, group in skipped.groupby("reason", sort=True):
-        lines += [f"**{reason}** ({len(group)} sheets)", "", *_grouped_lines(group), ""]
+        lines += [f"- **{reason}**: {_count_line(group)}"]
     return lines
 
 
@@ -157,17 +153,10 @@ def _spot_check(log: pd.DataFrame) -> list[str]:
         return [*heading, "No sheet has both a leader cell and a sheet name to compare."]
     chosen = random.Random(SPOT_CHECK_SEED).sample(range(len(pool)), min(SPOT_CHECK_SHEETS, len(pool)))
     sample = pool.iloc[sorted(chosen)]
-    lines = [
-        f"- {row.workbook}: {int(row.sheet_idx)} ({int(row.cell_matches_sheet)}/{int(row.cell_leader_rows)} "
-        "leader cells agree with the sheet name)"
-        for row in sample.itertuples()
-    ]
     sample_agree, sample_rows = _total(sample, "cell_matches_sheet"), _total(sample, "cell_leader_rows")
     all_agree, all_rows = _total(pool, "cell_matches_sheet"), _total(pool, "cell_leader_rows")
     return [
         *heading,
-        *lines,
-        "",
         f"Agreement in the sample: {_fmt(sample_agree)}/{_fmt(sample_rows)} rows ({_pct(sample_agree, sample_rows)}). "
         f"Agreement on all {_fmt(len(pool))} comparable sheets: {_fmt(all_agree)}/{_fmt(all_rows)} rows "
         f"({_pct(all_agree, all_rows)}). A human still has to judge whether this supports the assumption.",
@@ -198,19 +187,19 @@ def _column_fill(posts: pd.DataFrame) -> list[str]:
 
 def _odd_section(log: pd.DataFrame) -> list[str]:
     odd = log[log["odd_reasons"].fillna("") != ""]
-    lines = ["## Sheets the profiler flagged as odd (workbook: sheet index)", ""]
+    lines = ["## Sheets the profiler flagged as odd", ""]
     if odd.empty:
         return [*lines, "None."]
-    return [*lines, *_grouped_lines(odd)]
+    return [*lines, _count_line(odd)]
 
 
 def render_report(result: HarmonisedResult, roster: pd.DataFrame) -> str:
     """The full Markdown report; raises nothing on an empty run."""
     log = result.sheet_log.reindex(columns=list(LOG_COLUMNS))
     sections = [
-        ["# Harmonise summary", "", "Counts, file paths and sheet indexes only; no names and no post text."],
+        ["# Harmonise summary", "", "Counts only: no names, no file names, no sheet indexes and no post text. The per-sheet log is a git-ignored file."],
         _headline(result, log),
-        [f"Roster loaded once from seventh_100_leaders/All_500.xlsx: {_fmt(len(roster))} people."],
+        [f"Roster loaded once from the roster workbook: {_fmt(len(roster))} people."],
         _sheet_status(log),
         _skipped_section(log),
         _leader_section(log),

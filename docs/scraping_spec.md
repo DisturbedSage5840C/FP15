@@ -2,7 +2,7 @@
 
 **Status: nothing in this file is approved and nothing has been built.** No scraper exists in this repo, no
 network call is made, and `scraping_approved` in `configs/thresholds.yaml` is `false`. The team asked the course mentors for
-three things. Until he approves in writing, the study covers the Indian corporate leaders already in the data
+three things. Until they approve in writing, the study covers the Indian corporate leaders already in the data
 (CLAUDE.md, "Data rules"). This file says what each request would add, how it would be checked, and what he has to
 answer first.
 

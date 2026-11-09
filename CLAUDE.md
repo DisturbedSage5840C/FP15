@@ -8,7 +8,7 @@ Every claim is about the image projected in public posts. Never write "personali
 
 ## Data rules
 - data/raw is read-only. Never edit, move or delete anything in it. Hash it in data/raw/MANIFEST.sha256 on first run and verify the hash at the start of every pipeline run.
-- No scraping and no network downloads of new post data. The team has asked the course mentors to allow scraping of likes, reposts and followers and to add foreign leaders. None of that is approved. Until he approves in writing, nobody scrapes anything and the study covers the Indian corporate leaders already in the data.
+- No scraping and no network downloads of new post data. The team has asked the course mentors to allow scraping of likes, reposts and followers and to add foreign leaders. None of that is approved. Until they approve in writing, nobody scrapes anything and the study covers the Indian corporate leaders already in the data.
 - Original variables (per the data owner): leader_name, company_name, current_title, role_start_year, ceo_type, platform, post_date, post_date_text. In the workbooks seen so far role_start_year and post_date are empty. Check which are filled in each workbook and report; never fill them in by guessing.
 - The repo is public. No names, post text, links or reversible ids may ever be committed.
 - Posts are nested in leaders. Analysis files carry leader_id only, never names. leader_id is a keyed HMAC of the name key; the key lives in the FP15_ID_KEY environment variable or a git-ignored .env, never in the repo (`make check-key`). Raw post text is not pasted into chat, issues or public places.

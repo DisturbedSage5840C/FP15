@@ -50,10 +50,11 @@ def _profiles() -> list[SheetProfile]:
     return profile_records(records)
 
 
-def test_raw_files_table_lists_name_size_and_hash() -> None:
+def test_raw_files_table_lists_generic_label_size_and_hash_but_not_the_file_name() -> None:
     text = render_raw_files({"Company_Data.xlsx": "a" * 64}, {"Company_Data.xlsx": 2048})
 
-    assert "Company_Data.xlsx" in text
+    assert "raw-file-01" in text
+    assert "Company_Data" not in text
     assert "2,048" in text
     assert "a" * 64 in text
 
@@ -72,15 +73,17 @@ def test_zip_members_listing_marks_kind_and_skips_directories(tmp_path: Path) ->
 
     assert [m.name for m in members] == ["batch/leaders.xlsx", "notes.pdf", "wordcount_2.py", "README"]
     assert [m.kind for m in members] == ["workbook", "pdf", "script", "other"]
-    assert "batch/leaders.xlsx" in text
+    assert "4 members (1 other, 1 pdf, 1 script, 1 workbook)" in text
+    assert "leaders.xlsx" not in text
     assert "4 members" in text
 
 
 def test_workbook_summary_counts_sheets_and_data_rows_per_workbook() -> None:
     text = render_workbook_summary(_profiles())
 
-    assert "| a.xlsx | 2 | 4 |" in text
-    assert "| b.xlsx | 1 | 2 |" in text  # header-less sheet: both rows are data
+    assert "| workbook-01 | 2 | 4 |" in text
+    assert "| workbook-02 | 1 | 2 |" in text
+    assert ".xlsx" not in text  # header-less sheet: both rows are data
 
 
 def test_layout_table_groups_sheets_by_layout() -> None:
@@ -90,11 +93,13 @@ def test_layout_table_groups_sheets_by_layout() -> None:
     assert "no-header" in text or "off-layout" in text
 
 
-def test_odd_sheets_table_lists_position_and_reason_but_never_the_sheet_name() -> None:
+def test_odd_sheets_report_counts_reasons_but_never_file_names_sheet_names_or_indexes() -> None:
     text = render_odd_sheets(_profiles())
 
-    assert "b.xlsx" in text
+    assert "| Reason | Sheets |" in text
     assert "no header row" in text
+    assert "b.xlsx" not in text
+    assert "Sheet #" not in text
     assert "Ann Rao" not in text
     assert "Odd" not in text
     assert "a.xlsx" not in text
@@ -136,7 +141,8 @@ def test_filled_expected_empty_columns_are_listed_per_workbook() -> None:
 
     text = render_filled_expected_empty(profile_records([_record(rows, workbook="f.xlsx")]))
 
-    assert "| f.xlsx | Post_Date | 1 / 2 |" in text
+    assert "| workbook-01 | Post_Date | 1 / 2 |" in text
+    assert "f.xlsx" not in text
     assert "Role_Start_Year" not in text
 
 

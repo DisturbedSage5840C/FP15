@@ -69,12 +69,12 @@ def test_report_marks_the_owner_leader_figure_as_superseded() -> None:
     assert "superseded, see Findings" in SUPERSEDED_LEADER_NOTE
 
 
-def test_skipped_sheets_are_grouped_by_reason_with_file_and_index() -> None:
+def test_skipped_sheets_are_counted_by_reason_without_file_names_or_indexes() -> None:
     text = render_report(_basic(), _roster())
 
-    assert "header only, no data rows" in text
-    assert "D/B1/a.xlsx: 2, 3" in text
-    assert "D/B2/b.xlsx: 0" in text
+    assert "- **header only, no data rows**: 2 sheets in 1 workbooks" in text
+    assert ".xlsx" not in text
+    assert "D/B1" not in text
 
 
 def test_report_never_contains_sheet_or_leader_names() -> None:
@@ -100,11 +100,12 @@ def _checkable_sheets(n: int) -> list[dict[str, object]]:
     ]
 
 
-def test_spot_check_lists_at_most_the_configured_number_of_sheets() -> None:
+def test_spot_check_lists_no_per_sheet_lines() -> None:
     text = render_report(_result(_checkable_sheets(SPOT_CHECK_SHEETS + 10)), _roster())
 
-    listed = [line for line in text.splitlines() if line.startswith("- D/B/w")]
-    assert len(listed) == SPOT_CHECK_SHEETS
+    assert not [line for line in text.splitlines() if line.startswith("- D/B/w")]
+    assert "D/B/w" not in text
+    assert f"Agreement on all {SPOT_CHECK_SHEETS + 10} comparable sheets" in text
 
 
 def test_spot_check_is_deterministic_and_reports_an_agreement_rate() -> None:
@@ -122,10 +123,10 @@ def test_spot_check_without_checkable_sheets_says_so() -> None:
     assert "no sheet has both" in text.lower()
 
 
-def test_odd_sheets_are_listed_by_file_and_index() -> None:
+def test_odd_sheets_are_counted_without_file_names_or_indexes() -> None:
     text = render_report(_basic(), _roster())
 
-    assert "D/B1/a.xlsx: 2" in text.split("Sheets the profiler flagged")[1]
+    assert "1 sheets in 1 workbooks" in text.split("Sheets the profiler flagged")[1]
 
 
 def test_column_fill_counts_cover_age_text_post_date_and_text_like_dates() -> None:

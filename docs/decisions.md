@@ -9,13 +9,13 @@ Format: date, who decided, what, why. Gate sign-offs need a human name.
 - [ ] G4 clean rebuild: not signed
 
 ## Decisions
-- 2026-11-05: Company_Data.xlsx added (852 people, 533 companies). Contact columns are dropped at load. the data owner got it from Anshika.
+- 2026-11-05: Company_Data.xlsx added (852 people, 533 companies). Contact columns are dropped at load. The data owner got it from Anshika.
 - 2026-11-05: the data owner's update to the course mentors: the team narrowed to key leadership traits (Northouse and similar), asked to scrape likes, reposts, followers and to add foreign leaders. Anshika confirmed none of these is in the database. the course mentors has not decided. Until he does: no scraping, Indian leaders only. A meeting with him is planned for next week.
 
 ## Open questions for the mentors
 1. Date the posts were collected.
 2. Who scraped the data, under what approval; does the ethics route cover analysis and publication.
-3. Scope: Indian corporate leaders on LinkedIn only, or also foreign leaders (the team asked). the course mentors decides.
+3. Scope: Indian corporate leaders on LinkedIn only, or also foreign leaders (the team asked). the course mentors decide.
 4. Success variable: voice as headline, firm performance as secondary layer.
 5. Gender coding policy, or drop H2. What do 1 and 0 mean in Company_Data's Gender column.
 6. LIWC-22 licence, or open dictionaries only.
@@ -24,7 +24,7 @@ Format: date, who decided, what, why. Gate sign-offs need a human name.
 9. SETTLED 2026-11-05 (project owner): the base roster is seventh_100_leaders/All_500.xlsx, loaded once (see Findings). Matching the wordcount summaries and Company_Data against it is still Step 4, to be resolved by hand.
 10. Company_Data.xlsx came from Anshika via the data owner. Still open: when it was built and who coded Gender.
 11. Trait list: Northouse's five plus three exploratory measures?
-12. Scraping likes, reposts and followers: allowed or not, under what approval? Nothing is scraped until the course mentors decides.
+12. Scraping likes, reposts and followers: allowed or not, under what approval? Nothing is scraped until the course mentors decide.
 13. Are role_start_year and post_date filled in another version of the data? Both are empty in the workbooks seen so far.
 
 ## Findings
@@ -162,3 +162,9 @@ the looser key removed about 9,800 more rows than the certain rules do. Those ro
 the cells. It was moved to a git-ignored `..._VOID_old_cell_set.csv` and a new sample of 200 cells (200 distinct
 leaders, `human_post_count` blank, unscored) was redrawn from the new cell set. G1 stays unsigned.
 The Hinglish precision file (25 rows, `human_right` still blank) was drawn from the old cell set as well; it is not redrawn here and a human has not filled it.
+
+## 2026-11-09: public-repo cleanup, going forward (step 4)
+
+- The mentor's and the data owner's names are replaced in tracked files by "the course mentors" and "the data owner". Git history still holds the old strings until the history rewrite (step 6) is done.
+- Generated reports are counts only. They no longer carry raw workbook or file names, zip member names, or sheet indexes. Workbooks are labelled `workbook-NN` and raw files `raw-file-NN`; the per-sheet log stays in the git-ignored `data/interim` files.
+- Not changed: dated entries in this file that name workbooks or sheet indexes, and a third person named in two entries. Neither was covered by the instruction; flagged for the owner.
