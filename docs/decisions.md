@@ -177,3 +177,11 @@ The Hinglish precision file (25 rows, `human_right` still blank) was drawn from 
 - Not done on purpose: the segmenter was **not run on all cells**, and the sample was **not scored**. The match rate between feed names and the leader column is therefore unmeasured. A header the leader wrote under a different spelling would be treated as embedded, so the count would be too low for that cell. The human check of the 200 cells is where this shows up.
 - `src.segment_score` now passes the leader key too, so a later G1 score uses the same rule as the segmenter. It was not run.
 - G1 stays unsigned.
+
+## 2026-11-09: history rewritten to remove the mentor's and the data owner's names (step 6)
+- **What was done.** `git filter-repo --replace-text` and `--replace-message` replaced the mentor's name with "the course mentors" and the data owner's name with "the data owner" in every blob and commit message of all 35 commits. The full owner name is matched before the shorter mentor name because the two share a word. The branch was then force-pushed with `--force-with-lease` against the known previous remote head.
+- **Every commit hash changed.** The last code commit before the rewrite was `c735fff`; the same code is now `6ca0ede`. Any hash quoted in a message or note from before this entry refers to the old history.
+- **Verified after the rewrite, counts only.** Zero occurrences of any old string in patches, commit messages, author fields, file paths, ref names and every stored object (all blobs, not just reachable ones). One ref, no tags.
+- **Backup.** A bundle of the old history sits outside the repo folder (`FP15-backup-names-2026-11-09.bundle`, next to the repo). It is not tracked and still holds the old strings, so keep it private and delete it when it is no longer needed.
+- **Limits.** Clones, forks and downloads made before the push keep the old history and the old names. GitHub can keep unreachable commits viewable by their old hash and in cached views until it garbage-collects them. Removing those needs a request to GitHub support; nothing here does that.
+- **Not covered.** A third person is still named in an earlier entry of this file (see the open item in the step 7 report). This rewrite did not touch it because it was outside the instruction.
