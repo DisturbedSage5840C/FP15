@@ -1,8 +1,7 @@
 """Render reports/harmonise_summary.md from a harmonise run (counts only).
 
-The report never carries leader names, sheet names or post text. Sheets are identified by
-workbook path and zero-based sheet index; the full list with sheet names stays in the
-git-ignored data/interim/harmonise_skipped.csv.
+The report never carries leader names, sheet names, file names, sheet indexes or post text.
+Sheets are only counted; the per-sheet log stays in the git-ignored data/interim files.
 """
 from __future__ import annotations
 
