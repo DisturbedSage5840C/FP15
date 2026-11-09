@@ -2,8 +2,12 @@
 
 A raw cell is the text copied from the feed. Each post in it opens with a header: the author's name line
 followed by a connection marker line such as "• 3rd+". The segmenter starts a new post at each header.
-Counting convention (to be settled by the human check): every header is one post, so a repost or an
-embedded post that carries its own header counts as a separate post. A cell with no recognised marker is
+Counting convention (to be settled by the human check): a repost or an embedded post is one post by the
+leader, never a second post. Given the leader's name key, a header whose name line is not the leader's is
+embedded: it and everything up to the leader's next header belong to the leader's post, flagged
+`is_repost`, and its lines go to `embedded_text`, never to the leader-voice `text`. A header whose name is
+the leader's opens a new post. A cell with no header by the leader is one post with an empty leader voice.
+Without a leader key every header opens a post (nothing is flagged). A cell with no recognised marker is
 one post and is flagged `found_header = False`. Text before the first header stays with the first post.
 
 This module only writes the sample. It does not score it (see src.segment_score) and it does not run the
@@ -13,6 +17,7 @@ from __future__ import annotations
 
 import logging
 import random
+import re
 import sys
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -35,16 +40,22 @@ logger = logging.getLogger(__name__)
 DEFAULT_THRESHOLDS_PATH = Path("configs/thresholds.yaml")
 DEFAULT_SAMPLE_PATH = Path("data/derived/segmentation_check_200.csv")
 CONNECTION_MARKER_RULE = "connection_marker"
+REPOST_NOTICE = re.compile(r"^.+\s+reposted this$", re.IGNORECASE)
 CHECK_COLUMNS = ["n", "leader_id", "ref", "post_text", "human_post_count", "human_note"]
 FRAME_COLUMNS = ["leader_key", "ref", "text"]
 
 
 @dataclass(frozen=True)
 class Segment:
-    """One post: its first line number in the cell and its lines joined back together."""
+    """One post by the leader: its first line number, the leader's own lines, and any embedded lines.
+
+    `text` is the leader's voice only. `embedded_text` holds the reposted or embedded post, kept apart.
+    """
 
     start_line: int
     text: str
+    embedded_text: str = ""
+    is_repost: bool = False
 
 
 @dataclass(frozen=True)
@@ -53,6 +64,11 @@ class Segmentation:
 
     segments: tuple[Segment, ...]
     found_header: bool
+
+    @property
+    def is_repost(self) -> bool:
+        """True when any post in the cell is a repost or carries an embedded post."""
+        return any(segment.is_repost for segment in self.segments)
 
 
 @dataclass(frozen=True)
@@ -95,16 +111,46 @@ def _header_starts(lines: Sequence[str]) -> list[int]:
     return starts
 
 
-def segment_cell(text: str) -> Segmentation:
-    """Split a cell into posts at each header. A blank cell has no posts."""
+def _is_leader_header(lines: Sequence[str], start: int, leader_key: str) -> bool:
+    """Whether the header opening at `start` names the leader.
+
+    The name line may carry extra tokens ("Dr.", "CFA") or lack some, so one token set must contain the
+    other. A header with no readable name line (the marker is the first line) is taken as the leader's own.
+    """
+    if _is_marker(lines[start]):
+        return True
+    header, leader = set(name_key(lines[start]).split()), set(leader_key.split())
+    return not header or header <= leader or leader <= header
+
+
+def _build_segment(lines: Sequence[str], first: int, last: int, embedded_from: int | None) -> Segment:
+    """One post from lines[first:last]; lines from `embedded_from` on are the embedded post."""
+    split = last if embedded_from is None else embedded_from
+    own = lines[first:split]
+    notice = any(REPOST_NOTICE.match(line.strip()) for line in own)
+    voice = [line for line in own if not REPOST_NOTICE.match(line.strip())]
+    return Segment(first, "\n".join(voice), "\n".join(lines[split:last]), embedded_from is not None or notice)
+
+
+def segment_cell(text: str, leader_key: str | None = None) -> Segmentation:
+    """Split a cell into posts by the leader. A blank cell has no posts.
+
+    With a `leader_key` (the sorted-token name key), a header by someone else is embedded in the current
+    post, not a new post (see the module docstring). Without one, every header opens a post.
+    """
     if not text.strip():
         return Segmentation((), False)
     lines = text.split("\n")
     starts = _header_starts(lines)
     if not starts:
         return Segmentation((Segment(0, text),), False)
-    bounds = [0, *starts[1:], len(lines)]
-    segments = tuple(Segment(bounds[i], "\n".join(lines[bounds[i] : bounds[i + 1]])) for i in range(len(starts)))
+    own = [s for s in starts if leader_key is None or _is_leader_header(lines, s, leader_key)]
+    foreign = [s for s in starts if s not in own]
+    bounds = [0, *[s for s in own if s != starts[0]], len(lines)]
+    segments = tuple(
+        _build_segment(lines, first, last, next((f for f in foreign if first <= f < last), None))
+        for first, last in zip(bounds, bounds[1:])
+    )
     return Segmentation(segments, True)
 
 

@@ -124,14 +124,23 @@ def _by_bucket(details: Sequence[Detail]) -> tuple[tuple[str, int, int], ...]:
     return tuple((label, cells[label], exact[label]) for label in labels if cells[label])
 
 
-def score_cells(rows: Sequence[HumanCount], texts: Mapping[str, str], threshold: float) -> ScoreResult:
-    """Compare each filled human count with the segmenter's count for the same raw cell."""
+def score_cells(
+    rows: Sequence[HumanCount],
+    texts: Mapping[str, str],
+    threshold: float,
+    leader_keys: Mapping[str, str] | None = None,
+) -> ScoreResult:
+    """Compare each filled human count with the segmenter's count for the same raw cell.
+
+    `leader_keys` (ref to name key) lets the segmenter count a repost as one post by the leader.
+    """
+    keys = leader_keys or {}
     details: list[Detail] = []
     for row in rows:
         if row.ref not in texts:
             raise ValueError(f"row {row.n}: ref not found in the harmonised posts")
         if row.count is not None:
-            details.append(Detail(row.n, row.count, len(segment_cell(texts[row.ref]).segments)))
+            details.append(Detail(row.n, row.count, len(segment_cell(texts[row.ref], keys.get(row.ref)).segments)))
     exact = sum(d.human == d.machine for d in details)
     accuracy = exact / len(details) if details else None
     return ScoreResult(
@@ -215,8 +224,9 @@ def run(
         rows = load_human_counts(sample_path)
         if all(row.count is None for row in rows):
             raise ValueError(f"{sample_path}: no human_post_count is filled in yet")
-        texts = dict(zip(*(raw_cell_frame(_read_posts(interim_dir))[c] for c in ("ref", "text"))))
-        result = score_cells(rows, texts, active)
+        frame = raw_cell_frame(_read_posts(interim_dir))
+        texts = dict(zip(frame["ref"], frame["text"]))
+        result = score_cells(rows, texts, active, dict(zip(frame["ref"], frame["leader_key"])))
     except (ManifestMismatch, FileNotFoundError, ValueError) as error:
         logger.error("segmentation-score FAILED: %s", error)
         return 1

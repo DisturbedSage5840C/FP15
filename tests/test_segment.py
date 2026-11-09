@@ -283,3 +283,107 @@ def test_main_returns_the_exit_code_of_run(monkeypatch: pytest.MonkeyPatch) -> N
     monkeypatch.setattr(segment, "run", lambda: 0)
 
     assert segment.main([]) == 0
+
+
+# --- repost and embedded posts: one post by the leader, embedded text kept out of the leader's voice ---
+
+LEADER = name_key("Person A")
+
+
+def _own(body: str) -> str:
+    return _post("Person A", body)
+
+
+def _embedded(body: str) -> str:
+    return _post("Person Z", body)
+
+
+def test_without_a_leader_every_header_stays_its_own_post_and_nothing_is_a_repost() -> None:
+    result = segment_cell(_own("one") + "\n" + _embedded("two"))
+
+    assert len(result.segments) == 2
+    assert result.is_repost is False
+    assert all(s.embedded_text == "" and not s.is_repost for s in result.segments)
+
+
+def test_two_headers_by_the_leader_are_two_posts_and_not_reposts() -> None:
+    result = segment_cell(_own("one") + "\n" + _own("two"), LEADER)
+
+    assert len(result.segments) == 2
+    assert result.is_repost is False
+
+
+def test_a_header_by_someone_else_inside_a_leader_post_is_embedded_not_a_second_post() -> None:
+    text = _own("my comment") + "\n" + _embedded("their post")
+
+    result = segment_cell(text, LEADER)
+
+    assert len(result.segments) == 1
+    only = result.segments[0]
+    assert only.is_repost is True and result.is_repost is True
+    assert "my comment" in only.text and "their post" not in only.text
+    assert "their post" in only.embedded_text and "my comment" not in only.embedded_text
+
+
+def test_a_pure_repost_with_no_header_by_the_leader_is_one_post_with_empty_leader_voice() -> None:
+    result = segment_cell(_embedded("their post"), LEADER)
+
+    assert len(result.segments) == 1
+    assert result.segments[0].text.strip() == ""
+    assert "their post" in result.segments[0].embedded_text
+    assert result.segments[0].is_repost is True
+
+
+def test_a_reposted_this_notice_marks_the_post_as_a_repost_and_stays_out_of_the_leader_voice() -> None:
+    text = "Person A reposted this\n" + _embedded("their post")
+
+    result = segment_cell(text, LEADER)
+
+    assert len(result.segments) == 1 and result.segments[0].is_repost is True
+    assert "reposted this" not in result.segments[0].text
+
+
+def test_a_leader_post_after_a_repost_starts_a_new_post() -> None:
+    text = _own("first") + "\n" + _embedded("quoted") + "\n" + _own("second")
+
+    result = segment_cell(text, LEADER)
+
+    assert [s.is_repost for s in result.segments] == [True, False]
+    assert "second" in result.segments[1].text
+
+
+def test_several_embedded_headers_in_a_row_are_still_one_post() -> None:
+    text = _own("mine") + "\n" + _embedded("one") + "\n" + _post("Person Y", "two")
+
+    result = segment_cell(text, LEADER)
+
+    assert len(result.segments) == 1
+    assert "one" in result.segments[0].embedded_text and "two" in result.segments[0].embedded_text
+
+
+@pytest.mark.parametrize("header_name", ["Dr. Person A", "Person A, CFA", "person a"])
+def test_the_leader_header_matches_when_the_name_has_extra_or_missing_tokens_or_other_case(header_name: str) -> None:
+    result = segment_cell(_post(header_name, "one") + "\n" + _embedded("two"), LEADER)
+
+    assert len(result.segments) == 1 and result.segments[0].is_repost is True
+    assert "one" in result.segments[0].text
+
+
+def test_leader_voice_plus_embedded_text_cover_every_line_of_a_cell_without_notices() -> None:
+    text = _own("mine") + "\n" + _embedded("theirs")
+
+    only = segment_cell(text, LEADER).segments[0]
+
+    assert (only.text + "\n" + only.embedded_text).split("\n") == text.split("\n")
+
+
+def test_a_cell_with_no_marker_is_one_post_and_not_a_repost_even_with_a_leader() -> None:
+    result = segment_cell("Just some text", LEADER)
+
+    assert len(result.segments) == 1 and result.is_repost is False and result.found_header is False
+
+
+def test_a_header_whose_first_line_is_the_marker_has_no_name_and_counts_as_the_leaders_own() -> None:
+    result = segment_cell("• 3rd+\nHeadline\nBody", LEADER)
+
+    assert len(result.segments) == 1 and result.is_repost is False

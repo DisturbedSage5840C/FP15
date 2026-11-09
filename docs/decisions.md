@@ -168,3 +168,12 @@ The Hinglish precision file (25 rows, `human_right` still blank) was drawn from 
 - The mentor's and the data owner's names are replaced in tracked files by "the course mentors" and "the data owner". Git history still holds the old strings until the history rewrite (step 6) is done.
 - Generated reports are counts only. They no longer carry raw workbook or file names, zip member names, or sheet indexes. Workbooks are labelled `workbook-NN` and raw files `raw-file-NN`; the per-sheet log stays in the git-ignored `data/interim` files.
 - Not changed: dated entries in this file that name workbooks or sheet indexes, and a third person named in two entries. Neither was covered by the instruction; flagged for the owner.
+
+## 2026-11-09: segmenter counts a repost or embedded post as one post by the leader (step 5)
+
+- Rule (a construct decision the course mentors and the human check can still overturn): a repost or embedded post is **one post by the leader**, never a second post. Given the leader's name key, a header whose name line is not the leader's is embedded in the current post; a header by the leader opens a new post. A cell with no header by the leader is one post with an empty leader voice.
+- New fields: `is_repost` (per post, and per cell), and `embedded_text`, which keeps the embedded post out of the leader-voice `text`. "<name> reposted this" notice lines set `is_repost` and are dropped from the leader voice. The raw cell is never touched.
+- Name match: the header's name tokens and the leader's name tokens must be contained one in the other, so "Dr." or "CFA" does not break a match. Two people sharing the same tokens would be taken for the leader; this is not measured.
+- Not done on purpose: the segmenter was **not run on all cells**, and the sample was **not scored**. The match rate between feed names and the leader column is therefore unmeasured. A header the leader wrote under a different spelling would be treated as embedded, so the count would be too low for that cell. The human check of the 200 cells is where this shows up.
+- `src.segment_score` now passes the leader key too, so a later G1 score uses the same rule as the segmenter. It was not run.
+- G1 stays unsigned.

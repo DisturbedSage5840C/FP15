@@ -155,7 +155,8 @@ def test_the_report_does_not_warn_when_enough_cells_were_scored() -> None:
 def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Path]:
     interim = tmp_path / "interim"
     interim.mkdir()
-    rows = [(f"Leader {i}", "w.xlsx", "1", str(i), TWO_POSTS, "", "raw") for i in range(3)]
+    own_two_posts = lambda i: f"Leader {i}\n• 3rd+\nBody\nLeader {i}\n• 3rd+\nBody two"  # noqa: E731
+    rows = [(f"Leader {i}", "w.xlsx", "1", str(i), own_two_posts(i), "", "raw") for i in range(3)]
     columns = ["leader", "workbook", "sheet_idx", "source_row", "post_text", "link", "text_kind"]
     pd.DataFrame(rows, columns=columns).to_csv(interim / "harmonised_posts.csv", index=False)
     sample = tmp_path / "check.csv"
@@ -243,3 +244,14 @@ def test_the_report_says_not_scored_when_no_cell_has_a_human_count() -> None:
 
     assert "| At or above threshold | not scored |" in text
     assert "| Accuracy (exact matches / cells with a human count) | n/a |" in text
+
+
+def test_scoring_uses_the_leader_key_so_a_repost_counts_as_one_post() -> None:
+    cell = "Person A\n• 3rd+\nHead\nmine\nPerson Z\n• 3rd+\nHead\ntheirs"
+    rows = [HumanCount(1, "r1", 1)]
+
+    without_leader = score_cells(rows, {"r1": cell}, threshold=0.95)
+    with_leader = score_cells(rows, {"r1": cell}, threshold=0.95, leader_keys={"r1": "a person"})
+
+    assert without_leader.exact == 0
+    assert with_leader.exact == 1
