@@ -94,3 +94,12 @@ Counts over 22,023 cells: English 21,926, Hinglish 25, mixed 62, Hindi 1, other 
 Findings: only 25 cells are flagged, fewer than the 30 asked for the precision check, so `make hinglish-check`
 draws all 25 into a git-ignored file. Precision (count right) is NOT filled in: it needs a human reading the text,
 and post text is not printed in tool output. The thresholds were not tuned after seeing the counts.
+
+## Findings, 2026-11-09: the looser dedupe key collapsed rows with different content (second block, step 3)
+`make dedup-check` (`reports/dedup_check.md`, counts only) compares full raw texts inside each group the looser key
+collapsed. Of 63,773 stacked rows, 15,662 were collapsed (the 15,222 quoted earlier does not match: 63,773 minus
+48,111 harmonised rows is 15,662). 6,737 groups held more than one row: 3,128 identical raw text, 1 differing only
+in punctuation, 0 in spacing or case, and 3,608 with different content (12,346 of the collapsed rows; 2,993 keyed on
+link, 615 on the first 200 characters; in 184 the shorter text is the start of the longer). Nothing was changed:
+the dedupe rule, `harmonised_posts.csv` and every downstream table are as before. STOPPED here per the owner's
+instruction; what to do about the content-different groups is a decision for the owner.

@@ -148,9 +148,9 @@ def fill_leader(rows: pd.DataFrame, sheet_name: str, is_combined: bool) -> FillR
     )
 
 
-def drop_duplicates(posts: pd.DataFrame) -> pd.DataFrame:
-    """Keep the first copy of each (leader, link-or-text-head) post and count the copies."""
-    keys = pd.Series(
+def dedupe_keys(posts: pd.DataFrame) -> pd.Series:
+    """The looser key: (leader, link) when a link is present, else (leader, first 200 characters of text)."""
+    return pd.Series(
         [
             f"{name_key(leader)}|L|{link}" if link else f"{name_key(leader)}|T|{str(text)[:DEDUPE_TEXT_CHARS]}"
             for leader, link, text in zip(posts["leader"], posts["link"], posts["post_text"])
@@ -158,6 +158,11 @@ def drop_duplicates(posts: pd.DataFrame) -> pd.DataFrame:
         index=posts.index,
         dtype=object,
     )
+
+
+def drop_duplicates(posts: pd.DataFrame) -> pd.DataFrame:
+    """Keep the first copy of each (leader, link-or-text-head) post and count the copies."""
+    keys = dedupe_keys(posts)
     counted = posts.assign(n_copies=keys.map(keys.value_counts()))
     return counted.loc[~keys.duplicated()].reset_index(drop=True)
 
@@ -187,8 +192,8 @@ def _log_entry(
     }
 
 
-def harmonise_records(records: list[SheetRecord]) -> HarmonisedResult:
-    """Run planning, extraction, leader assignment and dedupe over every loaded sheet."""
+def stack_records(records: list[SheetRecord]) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Planning, extraction and leader assignment over every loaded sheet, before any dedupe: (rows, sheet log)."""
     frames: list[pd.DataFrame] = []
     log: list[dict[str, object]] = []
     seen_workbooks: set[str] = set()
@@ -204,11 +209,16 @@ def harmonise_records(records: list[SheetRecord]) -> HarmonisedResult:
         frames.append(fill.rows)
         log.append(_log_entry(record, profile, plan, is_combined, fill, len(rows)))
     stacked = pd.concat(frames, ignore_index=True) if frames else _empty_rows()
-    sheet_log = pd.DataFrame(log)
+    return stacked, pd.DataFrame(log)
+
+
+def harmonise_records(records: list[SheetRecord]) -> HarmonisedResult:
+    """Run planning, extraction, leader assignment and dedupe over every loaded sheet."""
+    stacked, sheet_log = stack_records(records)
     return HarmonisedResult(
         posts=drop_duplicates(stacked),
         sheet_log=sheet_log,
-        rows_with_text=sum(int(cast(int, entry["rows_with_text"])) for entry in log),
+        rows_with_text=int(sheet_log["rows_with_text"].sum()) if len(sheet_log) else 0,
         rows_after_leader=len(stacked),
     )
 
