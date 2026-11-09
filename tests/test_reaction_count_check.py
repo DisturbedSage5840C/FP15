@@ -476,6 +476,23 @@ def test_run_fails_cleanly_when_a_needed_column_is_missing(workspace: dict[str, 
     assert not workspace["report"].exists()
 
 
+def test_run_fails_cleanly_and_names_the_key_when_the_id_key_is_missing(
+    workspace: dict[str, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    monkeypatch.delenv("FP15_ID_KEY", raising=False)
+    monkeypatch.chdir(tmp_path)
+
+    with caplog.at_level("ERROR"):
+        code = _go(workspace)
+
+    assert code == 1
+    assert "FP15_ID_KEY" in caplog.text
+    assert not workspace["sample"].exists()
+
+
 def test_run_fails_cleanly_when_the_raw_manifest_does_not_match(workspace: dict[str, Path]) -> None:
     _go(workspace)
     (workspace["raw"] / "dummy.bin").write_bytes(b"changed")

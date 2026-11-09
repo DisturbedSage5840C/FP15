@@ -13,10 +13,12 @@ A leader_id is proposed only for keys held by one entity per source; ambiguous k
 from __future__ import annotations
 
 import hashlib
+import hmac
 from collections import Counter, defaultdict
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 
+from src.id_key import load_id_key
 from src.name_key import name_key
 
 MIN_LOOSE_TOKENS = 2
@@ -164,8 +166,12 @@ def summarise_pair(a: Sequence[Entity], b: Sequence[Entity], matches: Sequence[M
 
 
 def leader_id_for(key: str) -> str:
-    """A stable pseudonymous id derived from the key; it carries no readable name."""
-    digest = hashlib.sha256(key.encode("utf-8")).hexdigest()
+    """A stable pseudonymous id: an HMAC-SHA256 of the name key under the secret id key.
+
+    Without the key (src.id_key) an id cannot be rebuilt from a guessed name, so ids are safe to publish
+    as counts-only references. Raises MissingIdKey when no key is set.
+    """
+    digest = hmac.new(load_id_key(), key.encode("utf-8"), hashlib.sha256).hexdigest()
     return f"{LEADER_ID_PREFIX}{digest[:LEADER_ID_HEX_CHARS]}"
 
 

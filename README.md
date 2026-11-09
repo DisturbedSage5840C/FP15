@@ -12,7 +12,8 @@ This repository holds code, tests, configuration, decisions and **count-only rep
 
 - `data/raw/` (the post workbooks and `Company_Data.xlsx`) is git-ignored. Only the hash manifest `data/raw/MANIFEST.sha256` is tracked.
 - `data/interim/` and `data/derived/*.csv` are git-ignored. They can hold names, post text and post links.
-- Reports in `reports/` contain counts, column headers, pseudonymous `leader_id` values and file or sheet indexes. They contain no leader names, company names, cell values or post text.
+- Reports in `reports/` contain counts, column headers and file or sheet indexes. They contain no leader names, company names, cell values, post text or `leader_id` values.
+- The repo is public. No names, post text, links or reversible ids may ever be committed.
 - No scraping or network download of post data is done or approved. The study covers the Indian corporate leaders already in the data.
 
 To reproduce the numbers you need the raw files from the project team; they are not published here.
@@ -26,12 +27,15 @@ python3.11 -m venv .venv
 
 Place the raw files under `data/raw/` (read-only). The first run hashes them into `data/raw/MANIFEST.sha256`; every later run verifies that hash and stops if anything changed.
 
+Set the secret that keys `leader_id`. It lives in the `FP15_ID_KEY` environment variable or in a git-ignored `.env` file (`FP15_ID_KEY=<long random string>`), never in the repo. Keep the same key across runs, or ids change. `make check-key` fails with a clear message when it is missing and never prints the value.
+
 ## How to run
 
 One make target per stage. Scripts produce every result; there are no notebooks.
 
 | Target | What it does | Output |
 |---|---|---|
+| `make check-key` | Fails with a clear message unless the `leader_id` key is set; the value is never shown | none |
 | `make verify` | Checks the raw hash manifest (writes it on first run) | none |
 | `make inventory` | Lists files, sheets, header layouts and row counts | `reports/data_inventory.md` |
 | `make ingest` | Harmonises the post sheets and profiles Company_Data (email and phone columns dropped at load) | `reports/harmonise_summary.md`, `reports/company_data_profile.md` |
@@ -56,7 +60,7 @@ Known caveats, all logged under Findings in `docs/decisions.md`:
 - `reports/harmonise_summary.md` and `reports/id_matching.md` still print the earlier count of 544 leaders. That figure counts leaders with at least one self-authored post, which needs segmentation, so it is not comparable with the 563 to 567 raw-cell counts. Do not compare them.
 - The 15-post minimum is currently applied to raw post cells, a cell-level proxy, until author blocks exist.
 - Several Company_Data numeric columns are text with bracketed notes or capped values (for example "500+"). The Step C report shows how many cells read as numbers.
-- `leader_id` is an unsalted hash of a normalised name, so it is a pseudonym, not anonymisation.
+- `leader_id` is a keyed HMAC of a normalised name. It is a pseudonym, not anonymisation, and it stays reversible by anyone who holds the key. Commits dc458bb, fe919e2 and 94b4812 still hold example ids from the earlier unsalted scheme in `reports/extra_features.md`; see the history entry in `docs/decisions.md`.
 
 ## Method in one paragraph
 

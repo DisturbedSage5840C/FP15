@@ -14,6 +14,7 @@ from pathlib import Path
 import pandas as pd
 
 from src.harmonise import DEFAULT_INTERIM_DIR, _load_all
+from src.id_key import MissingIdKey
 from src.id_matching import (
     AMBIGUOUS,
     Entity,
@@ -140,11 +141,11 @@ def run(
     try:
         logger.info("manifest %s for %s", verify_raw(raw_dir), raw_dir)
         sources, summary_sheets = _build_sources(raw_dir, interim_dir)
-    except (ManifestMismatch, FileNotFoundError, ValueError) as error:
+        matches = _match_pairs(sources)
+        proposal = propose_leader_ids(sources)
+    except (ManifestMismatch, FileNotFoundError, ValueError, MissingIdKey) as error:
         logger.error("ids FAILED: %s", error)
         return 1
-    matches = _match_pairs(sources)
-    proposal = propose_leader_ids(sources)
     tables = {
         "id_matches.csv": _matches_frame(matches),
         "id_ambiguous.csv": _ambiguous_frame(sources, matches, proposal),

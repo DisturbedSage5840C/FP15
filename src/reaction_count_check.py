@@ -23,6 +23,7 @@ import yaml
 
 from src.harmonise import DEFAULT_INTERIM_DIR
 from src.harmonise_report import _fmt, _table
+from src.id_key import MissingIdKey
 from src.id_matching import leader_id_for
 from src.name_key import name_key
 from src.verify_raw import DEFAULT_RAW_DIR, ManifestMismatch
@@ -335,14 +336,14 @@ def run(
         logger.info("manifest %s for %s", verify_raw(raw_dir), raw_dir)
         active = settings or load_settings()
         posts = _read_posts(interim_dir)
-    except (ManifestMismatch, FileNotFoundError, ValueError) as error:
+        frame = _eligible_frame(posts[posts["text_kind"] == RAW_KIND])
+        chosen = select_sample(frame, active.n_number_on_own_line, active.n_control, active.seed)
+        sample = _sample_frame(chosen)
+    except (ManifestMismatch, FileNotFoundError, ValueError, MissingIdKey) as error:
         logger.error("reaction-check FAILED: %s", error)
         return 1
-    frame = _eligible_frame(posts[posts["text_kind"] == RAW_KIND])
-    chosen = select_sample(frame, active.n_number_on_own_line, active.n_control, active.seed)
     report = render_report(_counts_for(posts, RAW_KIND), _counts_for(posts, CLEANED_KIND), frame, chosen, active)
     _write(report_path, report)
-    sample = _sample_frame(chosen)
     sample_path.parent.mkdir(parents=True, exist_ok=True)
     sample.to_csv(sample_path, index=False)
     logger.info("wrote %s (%d rows)", sample_path, len(sample))

@@ -178,7 +178,12 @@ def workspace(tmp_path: Path) -> dict[str, Path]:
     interim = tmp_path / "interim"
     interim.mkdir()
     pd.DataFrame(ROWS, columns=POST_COLUMNS).to_csv(interim / "harmonised_posts.csv", index=False)
-    return {"raw": raw, "interim": interim, "report": tmp_path / "reports" / "extra_features.md"}
+    return {
+        "raw": raw,
+        "interim": interim,
+        "report": tmp_path / "reports" / "extra_features.md",
+        "examples": tmp_path / "derived" / "extra_features_examples.csv",
+    }
 
 
 def _go(workspace: dict[str, Path], per_class: int = 10) -> int:
@@ -187,7 +192,12 @@ def _go(workspace: dict[str, Path], per_class: int = 10) -> int:
         interim_dir=workspace["interim"],
         report_path=workspace["report"],
         settings=FeatureSettings(examples_per_class=per_class, seed=1),
+        examples_path=workspace["examples"],
     )
+
+
+def _examples(workspace: dict[str, Path]) -> pd.DataFrame:
+    return pd.read_csv(workspace["examples"], dtype=str, keep_default_na=False)
 
 
 def _report(workspace: dict[str, Path]) -> str:
@@ -214,14 +224,33 @@ def test_run_counts_only_raw_cells(workspace: dict[str, Path]) -> None:
     assert "| Raw cells analysed | 9 |" in _report(workspace)
 
 
-def test_run_lists_example_refs_with_leader_ids_for_each_class(workspace: dict[str, Path]) -> None:
+def test_report_lists_a_count_for_each_class_and_no_example_rows(workspace: dict[str, Path]) -> None:
     _go(workspace)
 
     report = _report(workspace)
     for name in CLASS_NAMES:
         assert f"### {name}" in report
-    assert f"| batch/w1.xlsx#1:r1 | {leader_id_for(name_key('Ann Rao'))} |" in report
-    assert f"| batch/w1.xlsx#1:r1 | {leader_id_for(name_key('Di Fox'))} |" in report
+    assert "| Cells matching |" in report
+    assert "Leader ID" not in report
+    assert "batch/w1.xlsx#1:r1" not in report
+
+
+def test_report_holds_no_leader_id_of_any_leader_in_the_data(workspace: dict[str, Path]) -> None:
+    _go(workspace)
+
+    report = _report(workspace)
+    for name in ("Ann Rao", "Bo Lee", "Cy Dunn", "Di Fox", "Ed Gray"):
+        assert leader_id_for(name_key(name)) not in report
+
+
+def test_run_writes_example_refs_with_leader_ids_to_the_derived_file(workspace: dict[str, Path]) -> None:
+    _go(workspace)
+
+    examples = _examples(workspace)
+    assert list(examples.columns) == ["class", "cell", "leader_id"]
+    assert set(examples["class"]) <= set(CLASS_NAMES)
+    ann = leader_id_for(name_key("Ann Rao"))
+    assert ((examples["cell"] == "batch/w1.xlsx#1:r1") & (examples["leader_id"] == ann)).any()
 
 
 def test_run_caps_the_examples_per_class(workspace: dict[str, Path]) -> None:
@@ -230,9 +259,11 @@ def test_run_caps_the_examples_per_class(workspace: dict[str, Path]) -> None:
 
     assert _go(workspace, per_class=3) == 0
 
+    examples = _examples(workspace)
+    assert (examples["class"] == "mention_stray_at").sum() == 3
     section = _report(workspace).split("### mention_stray_at", 1)[1].split("###", 1)[0]
-    assert section.count("batch/w1.xlsx#1:r1 |") == 3
     assert "| Cells matching | 8 |" in section
+    assert "| Examples written | 3 |" in section
 
 
 def test_report_never_holds_names_post_text_companies_or_links(workspace: dict[str, Path]) -> None:

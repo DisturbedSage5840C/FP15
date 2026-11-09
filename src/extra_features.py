@@ -2,7 +2,8 @@
 
 Applies the per-text rules in src.text_features to every raw post cell already on disk (no network, no
 scraping), reports how common each feature is, and lists cells where a rule is known to handle the
-text badly. Examples are cell refs plus leader ids; post text, names and links never reach the report.
+text badly. The report holds counts only. Example cell refs and leader ids go to a git-ignored file in
+data/derived; post text, names, links and ids never reach the tracked report.
 
 Claim limit: the counts describe the text in the cells, not the person. They are cell-level because a
 cell can still hold page chrome and several author blocks until segmentation exists.
@@ -23,6 +24,7 @@ import yaml
 
 from src.harmonise import DEFAULT_INTERIM_DIR
 from src.harmonise_report import _fmt, _pct, _table
+from src.id_key import MissingIdKey
 from src.id_matching import leader_id_for
 from src.name_key import name_key
 from src.text_features import TextFeatures, compute_features
@@ -33,6 +35,8 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_THRESHOLDS_PATH = Path("configs/thresholds.yaml")
 DEFAULT_REPORT_PATH = Path("reports/extra_features.md")
+DEFAULT_EXAMPLES_PATH = Path("data/derived/extra_features_examples.csv")
+EXAMPLE_COLUMNS = ("class", "cell", "leader_id")
 REQUIRED_COLUMNS = ("leader", "workbook", "sheet_idx", "source_row", "post_text", "text_kind")
 RAW_KIND = "raw"
 NO_LEADER = "(no leader)"
@@ -214,13 +218,31 @@ def _prevalence_lines(rows: list[PrevalenceRow], total: int) -> list[str]:
     return _table(("Feature", "Cells with at least one", "Share of raw cells", "Median among those"), body)
 
 
+def _matching_pairs(item: FailureClass, cells: list[tuple[str, str, TextFeatures]]) -> list[str]:
+    return [f"{ref}{PAIR_SEPARATOR}{leader_id}" for ref, leader_id, found in cells if item.matches(found)]
+
+
+def _picked_pairs(item: FailureClass, cells: list[tuple[str, str, TextFeatures]], settings: FeatureSettings) -> list[str]:
+    pairs = _matching_pairs(item, cells)
+    return pick_examples(pairs, settings.examples_per_class, settings.seed, item.name)
+
+
+def example_rows(cells: list[tuple[str, str, TextFeatures]], settings: FeatureSettings) -> list[tuple[str, str, str]]:
+    """(class, cell ref, leader id) for the drawn examples. Goes to a git-ignored file, never the report."""
+    rows = []
+    for item in FAILURE_CLASSES:
+        for pair in _picked_pairs(item, cells, settings):
+            ref, leader_id = pair.split(PAIR_SEPARATOR)
+            rows.append((item.name, ref, leader_id))
+    return rows
+
+
 def _class_lines(item: FailureClass, cells: list[tuple[str, str, TextFeatures]], settings: FeatureSettings) -> list[str]:
-    pairs = [f"{ref}{PAIR_SEPARATOR}{leader_id}" for ref, leader_id, found in cells if item.matches(found)]
-    picked = pick_examples(pairs, settings.examples_per_class, settings.seed, item.name)
+    matching = len(_matching_pairs(item, cells))
+    written = len(_picked_pairs(item, cells, settings))
     lines = [f"### {item.name}", "", item.problem, ""]
-    lines += _table(("Measure", "Count"), [("Cells matching", _fmt(len(pairs))), ("Examples listed", _fmt(len(picked)))])
-    lines += ["", *_table(("Cell", "Leader ID"), [tuple(pair.split(PAIR_SEPARATOR)) for pair in picked]), ""]
-    return lines
+    lines += _table(("Measure", "Count"), [("Cells matching", _fmt(matching)), ("Examples written", _fmt(written))])
+    return [*lines, ""]
 
 
 def _decision_lines() -> list[str]:
@@ -235,7 +257,7 @@ def _decision_lines() -> list[str]:
 
 
 def render_report(cells: list[tuple[str, str, TextFeatures]], settings: FeatureSettings) -> str:
-    """Markdown with rules, counts, cell refs and leader ids only: no names, post text or links."""
+    """Markdown with rules and counts only: no names, post text, links, cell refs or leader ids."""
     found = [item for _, _, item in cells]
     lines = [
         "# Extra text features",
@@ -260,7 +282,8 @@ def render_report(cells: list[tuple[str, str, TextFeatures]], settings: FeatureS
         "## Where the rules handle text badly",
         "",
         f"Up to {settings.examples_per_class} example cells per kind, drawn with seed {settings.seed}. "
-        "Each is a cell ref and a leader id; open the cell in data/interim to read it.",
+        "The cell refs and leader ids are in data/derived/extra_features_examples.csv, which is git-ignored "
+        "because the repository is public.",
         "",
     ]
     for item in FAILURE_CLASSES:
@@ -279,16 +302,21 @@ def run(
     interim_dir: Path = DEFAULT_INTERIM_DIR,
     report_path: Path = DEFAULT_REPORT_PATH,
     settings: FeatureSettings | None = None,
+    examples_path: Path = DEFAULT_EXAMPLES_PATH,
 ) -> int:
-    """Verify the raw manifest, compute the features, write the report; 0 on success, 1 on a clean failure."""
+    """Verify the raw manifest, compute the features, write the report and the example file; 0 or 1."""
     try:
         logger.info("manifest %s for %s", verify_raw(raw_dir), raw_dir)
         active = settings or load_settings()
         posts = _read_posts(interim_dir)
-    except (ManifestMismatch, FileNotFoundError, ValueError) as error:
+        cells = _cells(posts)
+    except (ManifestMismatch, FileNotFoundError, ValueError, MissingIdKey) as error:
         logger.error("extra-features FAILED: %s", error)
         return 1
-    _write(report_path, render_report(_cells(posts), active))
+    _write(report_path, render_report(cells, active))
+    examples_path.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(example_rows(cells, active), columns=list(EXAMPLE_COLUMNS)).to_csv(examples_path, index=False)
+    logger.info("wrote %s", examples_path)
     return 0
 
 

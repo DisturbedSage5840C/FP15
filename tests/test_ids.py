@@ -147,6 +147,24 @@ def test_run_returns_1_when_an_interim_input_is_missing(
     assert code == 1 and "FAILED" in caplog.text
 
 
+def test_run_returns_1_and_names_the_key_when_the_id_key_is_missing(
+    raw_dir: Path,
+    interim: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    monkeypatch.delenv("FP15_ID_KEY", raising=False)
+    monkeypatch.chdir(tmp_path)
+
+    with caplog.at_level(logging.ERROR):
+        code, report = _go(raw_dir, interim, tmp_path)
+
+    assert code == 1
+    assert "FP15_ID_KEY" in caplog.text
+    assert not report.exists()
+
+
 def test_run_refuses_when_the_manifest_no_longer_matches(raw_dir: Path, interim: Path, tmp_path: Path) -> None:
     _go(raw_dir, interim, tmp_path)
     (raw_dir / "posts.zip").write_bytes(b"changed")
