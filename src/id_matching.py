@@ -47,6 +47,7 @@ class Match:
     match_type: str
     n_candidates: int
     company_agrees: bool | None
+    key_a: str = ""  # with ref_a it identifies the a entity: sheet refs are shared, keys are not
 
 
 @dataclass(frozen=True)
@@ -127,9 +128,9 @@ def _agrees(entity: Entity, candidate: Entity) -> bool | None:
 
 def _rows_for(entity: Entity, kind: str, candidates: tuple[Entity, ...], source_b: str) -> list[Match]:
     if not candidates:
-        return [Match(entity.source, entity.ref, source_b, "", kind, 0, None)]
+        return [Match(entity.source, entity.ref, source_b, "", kind, 0, None, entity.key)]
     return [
-        Match(entity.source, entity.ref, c.source, c.ref, kind, len(candidates), _agrees(entity, c))
+        Match(entity.source, entity.ref, c.source, c.ref, kind, len(candidates), _agrees(entity, c), entity.key)
         for c in candidates
     ]
 
@@ -149,8 +150,8 @@ def match_entities(a: Sequence[Entity], b: Sequence[Entity]) -> tuple[Match, ...
 
 
 def summarise_pair(a: Sequence[Entity], b: Sequence[Entity], matches: Sequence[Match]) -> PairSummary:
-    outcome = {match.ref_a: match.match_type for match in matches}
-    counts = Counter(outcome.get(entity.ref, NONE) for entity in a)
+    outcome = {(match.ref_a, match.key_a): match.match_type for match in matches}
+    counts = Counter(outcome.get((entity.ref, entity.key), NONE) for entity in a)
     referenced = {match.ref_b for match in matches if match.match_type != NONE}
     return PairSummary(
         source_a=a[0].source if a else "",

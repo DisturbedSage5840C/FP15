@@ -100,9 +100,8 @@ def _ambiguous_frame(
     matches: Mapping[PairKey, Sequence[Match]],
     proposal: Sequence[ProposalRow],
 ) -> pd.DataFrame:
-    key_of = {(e.source, e.ref): e.key for items in sources.values() for e in items}
     rows = [
-        [key_of[(m.source_a, m.ref_a)], "ambiguous_match", m.source_a, m.ref_a, m.source_b, m.ref_b, m.n_candidates]
+        [m.key_a, "ambiguous_match", m.source_a, m.ref_a, m.source_b, m.ref_b, m.n_candidates]
         for pair in matches.values()
         for m in pair
         if m.match_type == AMBIGUOUS

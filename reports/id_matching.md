@@ -29,9 +29,9 @@ Total name cells filled: 541.
 
 | pair (a -> b) | a entities | b entities | exact | loose | ambiguous | none | b never named | exact: company agrees / differs / unknown |
 |---|---|---|---|---|---|---|---|---|
-| sheets -> company | 564 | 852 | 553 | 0 | 3 | 8 | 298 | 515 / 1 / 38 |
-| sheets -> roster | 564 | 653 | 400 | 1 | 1 | 162 | 253 | 370 / 0 / 29 |
-| sheets -> summaries | 564 | 541 | 370 | 0 | 92 | 102 | 0 | 482 / 0 / 41 |
+| sheets -> company | 564 | 852 | 554 | 0 | 2 | 8 | 298 | 515 / 1 / 38 |
+| sheets -> roster | 564 | 653 | 399 | 1 | 1 | 163 | 253 | 370 / 0 / 29 |
+| sheets -> summaries | 564 | 541 | 523 | 0 | 11 | 30 | 0 | 482 / 0 / 41 |
 | roster -> summaries | 653 | 541 | 378 | 1 | 9 | 265 | 152 | 376 / 1 / 1 |
 | roster -> company | 653 | 852 | 651 | 0 | 2 | 0 | 200 | 650 / 1 / 0 |
 | summaries -> company | 541 | 852 | 519 | 0 | 18 | 4 | 324 | 514 / 2 / 3 |
@@ -54,9 +54,9 @@ Outcomes are counted per entity of side a. Ambiguous names are listed in data/in
 | measure | owner | ours | difference |
 |---|---|---|---|
 | sheet leaders (distinct keys) | 544 | 564 | +20 |
-| sheets -> company exact | 541 | 553 | +12 |
-| sheets -> company ambiguous | 5 | 3 | -2 |
-| sheets -> company exact + loose | 543 | 553 | +10 |
+| sheets -> company exact | 541 | 554 | +13 |
+| sheets -> company ambiguous | 5 | 2 | -3 |
+| sheets -> company exact + loose | 543 | 554 | +11 |
 | roster and summaries both | 383 | 383 | +0 |
 | roster only | 265 | 269 | +4 |
 | summaries only | 148 | 149 | +1 |

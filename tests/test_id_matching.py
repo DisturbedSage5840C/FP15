@@ -183,6 +183,30 @@ def test_summarise_pair_counts_each_ambiguous_a_entity_once() -> None:
     assert summary.ambiguous == 1 and summary.n_a == 1
 
 
+def _shared_ref_sheets() -> list[Entity]:
+    """Sheet-like entities: unique keys, but several leaders sit on one workbook#index reference."""
+    return [_e("sheets", "w1#1", "Ann Lee"), _e("sheets", "w1#1", "Bo Rao"), _e("sheets", "w1#1", "Di Fox")]
+
+
+def test_each_match_row_carries_the_key_of_its_a_entity() -> None:
+    a = _shared_ref_sheets()
+    b = [_e("c", "b1", "Ann Lee"), _e("c", "b2", "Di Fox"), _e("c", "b3", "Fox Di")]
+
+    matches = match_entities(a, b)
+
+    kinds = {(m.key_a, m.match_type) for m in matches}
+    assert kinds == {("ann lee", "exact"), ("bo rao", "none"), ("di fox", "ambiguous")}
+
+
+def test_summarise_pair_counts_leaders_that_share_one_source_reference() -> None:
+    a = _shared_ref_sheets()
+    b = [_e("c", "b1", "Ann Lee"), _e("c", "b2", "Di Fox"), _e("c", "b3", "Fox Di")]
+
+    summary = summarise_pair(a, b, match_entities(a, b))
+
+    assert (summary.exact, summary.loose, summary.ambiguous, summary.none) == (1, 0, 1, 1)
+
+
 def test_leader_id_is_stable_prefixed_and_depends_only_on_the_key() -> None:
     assert leader_id_for("ann lee") == leader_id_for("ann lee")
     assert leader_id_for("ann lee") != leader_id_for("bo rao")
