@@ -130,3 +130,35 @@ age line. Every other row is kept. New columns in `data/interim/harmonised_posts
 a kept row, replaces `n_copies`), `dup_group_id` (sequential, carries no name or link) and `dup_candidate` (the
 group still holds more than one kept row). Real post-level deduplication happens after segmentation, not here.
 Rules are in `src/dedup_rules.py`; counts will be refreshed in the rebuild (step 3).
+
+## Findings, 2026-11-09: counts before and after the conservative dedupe (step 3)
+
+Everything was rebuilt from raw files with `make all` after step 2. Counts only; the tables are in `reports/`.
+
+| Measure | Before (looser key) | After (conservative rule) |
+|---|---|---|
+| Rows collapsed in harmonise | 15,662 | 5,819 |
+| Harmonised rows, all workbooks | 48,111 | 57,954 |
+| Harmonised rows, raw post_text workbooks | 22,023 | 26,945 |
+| Harmonised rows, cleaned workbooks | 26,088 | 31,009 |
+| Post cells (raw, after exact duplicates) | 22,023 | 26,945 |
+| Leaders with 15 or more raw post cells | 301 | 327 |
+| Leaders matched to exactly one Company_Data row (counted) | 295 | 320 |
+| Cells with a parsed relative age | 20,235 | 25,157 |
+| Cells ending in a number | 7,048 | 7,733 |
+| Language: English | 21,926 | 26,837 |
+| Language: Hinglish (possible) | 25 | 29 |
+| Language: mixed | 62 | 69 |
+| Language: Hindi | 1 | 1 |
+| Language: other | 9 | 9 |
+
+Company_Data fill shares barely move (every share within about 1.5 points, for example sector 95.9% to 96.2%,
+firm size by revenue 91.5% to 91.2%, Gender 80.3% to 79.7%); the base grows from 295 to 320 leaders because more
+leaders now reach 15 cells. Leaders with at least one cell stay at 563. The earlier counts were too low:
+the looser key removed about 9,800 more rows than the certain rules do. Those rows are now kept and flagged
+(`dup_candidate`) until post-level deduplication after segmentation.
+
+**The old 200-cell segmentation sample is void.** It was drawn from the previous cell set, so it no longer matches
+the cells. It was moved to a git-ignored `..._VOID_old_cell_set.csv` and a new sample of 200 cells (200 distinct
+leaders, `human_post_count` blank, unscored) was redrawn from the new cell set. G1 stays unsigned.
+The Hinglish precision file (25 rows, `human_right` still blank) was drawn from the old cell set as well; it is not redrawn here and a human has not filled it.

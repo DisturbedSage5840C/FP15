@@ -2,12 +2,13 @@
 
 | Measure | Value |
 |---|---|
-| Raw cells after removing exact duplicates | 22023 |
+| Raw cells after removing exact duplicates | 26945 |
 | Exact duplicate cells removed within a leader | 0 |
-| Cells with a relative age parsed to months | 20235 |
-| Frequent lines no rule covers (see the git-ignored candidates file) | 20 |
+| Cells with a relative age parsed to months | 25157 |
+| Frequent lines no rule covers (see the git-ignored candidates file) | 23 |
 
-Exact means the same text for the same leader. The earlier harmonise step used a looser key, so the count
+Exact means the same text for the same leader. The harmonise step already collapsed certain duplicates
+(identical, prefix, same post URL with a trailing number) and kept every other row flagged, so the count
 here is a lower bound on repeated content.
 
 ## Interface-line rules
@@ -16,18 +17,18 @@ Applied rules write the new column `post_text_clean` only. Proposed rules are co
 
 | Rule | Status | Lines | Cells |
 |---|---|---|---|
-| connection_marker | applied | 21386 | 20052 |
-| follow | applied | 13064 | 12621 |
-| see_more | applied | 5934 | 5099 |
-| image_prompt | applied | 6563 | 3552 |
-| age_line | applied | 23623 | 20235 |
-| like_comment_repost_send | applied | 1870 | 187 |
-| document_loading | applied | 197 | 197 |
-| join | proposed | 169 | 166 |
-| view_job | proposed | 239 | 116 |
-| lone_dot | proposed | 773 | 354 |
-| bare_digits | proposed | 7064 | 6748 |
-| bare_host | proposed | 2298 | 2286 |
+| connection_marker | applied | 26236 | 24886 |
+| follow | applied | 17279 | 16814 |
+| see_more | applied | 6369 | 5528 |
+| image_prompt | applied | 6904 | 3741 |
+| age_line | applied | 28620 | 25157 |
+| like_comment_repost_send | applied | 1879 | 190 |
+| document_loading | applied | 214 | 214 |
+| join | proposed | 172 | 169 |
+| view_job | proposed | 257 | 125 |
+| lone_dot | proposed | 1067 | 434 |
+| bare_digits | proposed | 7660 | 7340 |
+| bare_host | proposed | 2395 | 2383 |
 
 ## Age
 
@@ -47,9 +48,9 @@ Hinglish is missed. The flag is a counting rule, not a reading of the text.
 
 | Flag | Cells |
 |---|---|
-| English | 21926 |
-| Hinglish | 25 |
-| mixed | 62 |
+| English | 26837 |
+| Hinglish | 29 |
+| mixed | 69 |
 | Hindi | 1 |
 | other | 9 |
 
@@ -57,8 +58,8 @@ Hinglish is missed. The flag is a counting rule, not a reading of the text.
 
 | Measure | Cells |
 |---|---|
-| Cells ending in a number | 7048 |
-| Of those, shape eligible (number alone on its own line, not year-like, no suffix, no age line) | 6685 |
+| Cells ending in a number | 7733 |
+| Of those, shape eligible (number alone on its own line, not year-like, no suffix, no age line) | 7269 |
 
 The Step A human comparison is not confirmed (`reaction_check_confirmed` in configs/thresholds.yaml). Until it is confirmed every row is marked `unverified` and no count is read.
 

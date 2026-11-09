@@ -4,28 +4,28 @@ Counts from raw post cells already in data/interim. Nothing was downloaded.
 
 | Measure | Count |
 |---|---|
-| Raw cells | 22,023 |
-| End in a number | 7,048 |
-| Number alone on its own line | 6,685 |
-| Number inside a hashtag | 12 |
-| Number after a space on the same line | 70 |
-| Number glued to a word | 261 |
-| Number after punctuation | 20 |
-| Year-like (4 digits, 1900 to 2035) | 169 |
+| Raw cells | 26,945 |
+| End in a number | 7,733 |
+| Number alone on its own line | 7,269 |
+| Number inside a hashtag | 13 |
+| Number after a space on the same line | 83 |
+| Number glued to a word | 338 |
+| Number after punctuation | 30 |
+| Year-like (4 digits, 1900 to 2035) | 203 |
 | Year-like and alone on its own line | 0 |
 | Relative-age line right before the number (like 5yr) | 0 |
 | Text ends in a relative-age token (like 5yr) | 1 |
-| Number with a K or M suffix | 4 |
-| Cleaned cells that end in a number | 0 of 26,088 |
+| Number with a K or M suffix | 7 |
+| Cleaned cells that end in a number | 0 of 31,009 |
 
 ## Sampling frame
 
 | Measure | Count |
 |---|---|
-| Own-line cells with a LinkedIn link | 2,753 |
+| Own-line cells with a LinkedIn link | 2,814 |
 | Leaders with such a cell | 378 |
-| Cells with a LinkedIn link that do not end in a number | 240 |
-| Leaders with such a cell (control) | 84 |
+| Cells with a LinkedIn link that do not end in a number | 246 |
+| Leaders with such a cell (control) | 87 |
 | Drawn: number alone on its own line | 40 |
 | Drawn: control | 10 |
 

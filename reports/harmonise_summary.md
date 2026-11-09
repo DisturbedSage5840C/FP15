@@ -8,14 +8,14 @@ Counts, file paths and sheet indexes only; no names and no post text.
 |---|---|---|---|---|---|
 | Non-empty post_text rows | 32,448 | 32,656 | +208 | 31,385 | 64,041 |
 | Sheets with post text | 705 | 550 | -155 | 547 | 1,097 |
-| Unique posts after dedupe | 22,083 | 22,023 | -60 | 26,088 | 48,111 |
-| Leaders | 544 | 563 | +19 | 540 | 564 |
+| Unique posts after dedupe | 22,083 | 26,945 | +4,862 | 31,009 | 57,954 |
+| Leaders | 544 | 563 | +19 | 564 | 564 |
 
 The owner's leader figure of 544 is superseded, see Findings in docs/decisions.md (the owner's corrected count is 567 and is not comparable with ours until posts are segmented).
 
 The wordcount workbooks carry `cleaned_post_text`, a cleaned copy of posts that also sit in the raw `post_text` workbooks. The owner's figures are compared with the raw post_text workbooks only. Raw and cleaned rows are kept apart by `text_kind` and are not deduplicated against each other, so the All column counts the same post twice.
 
-Rows lost at the leader step: 268. Duplicates removed: 15,662. Differences are reported, not forced: they come from sheets skipped with a reason (below), rows dropped on the combined sheet for lack of a leader, and the dedupe rule.
+Rows lost at the leader step: 268. Rows collapsed as certain duplicates: 5,819. Differences are reported, not forced: they come from sheets skipped with a reason (below), rows dropped on the combined sheet for lack of a leader, and the dedupe rule.
 
 Roster loaded once from seventh_100_leaders/All_500.xlsx: 653 people.
 
@@ -130,11 +130,11 @@ Agreement in the sample: 332/332 rows (100.0%). Agreement on all 940 comparable 
 
 | Column | Filled | Share |
 |---|---|---|
-| age_text | 24,381 | 50.7% |
-| post_date | 17 | 0.0% |
-| post_date holds post text | 13 | 0.0% |
-| post_date_text | 9,137 | 19.0% |
-| role_start_year | 13 | 0.0% |
+| age_text | 29,301 | 50.6% |
+| post_date | 25 | 0.0% |
+| post_date holds post text | 14 | 0.0% |
+| post_date_text | 12,664 | 21.9% |
+| role_start_year | 14 | 0.0% |
 
 ## Sheets the profiler flagged as odd (workbook: sheet index)
 

@@ -96,7 +96,7 @@ def _headline(result: HarmonisedResult, log: pd.DataFrame) -> list[str]:
         "so the All column counts the same post twice.",
         "",
         f"Rows lost at the leader step: {_fmt(result.rows_with_text - result.rows_after_leader)}. "
-        f"Duplicates removed: {_fmt(result.rows_after_leader - len(result.posts))}. Differences are reported, "
+        f"Rows collapsed as certain duplicates: {_fmt(result.rows_after_leader - len(result.posts))}. Differences are reported, "
         "not forced: they come from sheets skipped with a reason (below), rows dropped on the combined "
         "sheet for lack of a leader, and the dedupe rule.",
     ]
