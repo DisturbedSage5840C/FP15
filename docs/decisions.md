@@ -11,6 +11,7 @@ Format: date, who decided, what, why. Gate sign-offs need a human name.
 ## Decisions
 - 2026-11-05: Company_Data.xlsx added (852 people, 533 companies). Contact columns are dropped at load. It came from the data owner.
 - 2026-11-05: the data owner's update to the course mentors: the team narrowed to key leadership traits (Northouse and similar), asked to scrape likes, reposts, followers and to add foreign leaders. the data owner confirmed none of these is in the database. the course mentors has not decided. Until he does: no scraping, Indian leaders only. A meeting with him is planned for next week.
+- 2026-11-17: Plan sync: Master Plan and Work Split added under docs/plans/ as the 17 Nov versions. Where they disagree with the repo on a number, the repo wins. Early estimates in the Master Plan opening paragraph (about 500 leaders, 20,000 posts) are superseded.
 
 ## Open questions for the mentors
 1. Date the posts were collected.
