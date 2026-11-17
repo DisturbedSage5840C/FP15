@@ -31,6 +31,12 @@ segmentation_check_seed: 20261107
 hinglish_check_cells: 30
 hinglish_check_seed: 20261109
 
+# Exploratory data analysis (make eda). Descriptive settings, not pass marks. eda_disclosure_min_leaders: a group with fewer
+# leaders is shown as "<5" in the report. eda_model_min_leaders: a group below this is flagged "too small to model"; a
+# working flag for the EDA only, the real modelling rule belongs in the pre-registration (gate G3).
+eda_disclosure_min_leaders: 5
+eda_model_min_leaders: 20
+
 # Step 5 (scraping and expansion). A HUMAN switch, like reaction_check_confirmed. Keep false until the course mentors approve
 # in writing. While false, tests/test_no_network.py fails if any pipeline code imports a network library or opens a
 # connection. Do not set true on your own: see docs/scraping_spec.md for what must be answered first.
