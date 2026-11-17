@@ -1,6 +1,6 @@
 PY ?= .venv/bin/python
 
-.PHONY: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample hinglish-check dedup-check dedup-characterise segmentation-score test all
+.PHONY: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report hinglish-check dedup-check dedup-characterise segmentation-score test all
 check-key: ## fail with a clear message unless FP15_ID_KEY is set (environment or git-ignored .env); the value is never shown
 	$(PY) -m src.id_key
 verify:   ## check raw hash manifest (writes it on first run)
@@ -30,6 +30,8 @@ post-cleaning: check-key ## dedupe, clean interface lines into a new column, par
 	$(PY) -m src.post_cleaning
 segmentation-sample: check-key ## draw the 200-cell blind check sample for the human (data/derived, git-ignored); never overwrites it
 	$(PY) -m src.segment
+segmentation-sample-report: check-key ## counts and seed of the G1 sample (reports/segmentation_sample.md); no refs, ids or text; does NOT sign off G1
+	$(PY) -m src.segment_sample_report
 hinglish-check: check-key ## draw 30 flagged cells for the human precision check (data/derived, git-ignored); never overwrites it
 	$(PY) -m src.hinglish_check
 dedup-check: check-key ## count what the looser dedupe key collapsed (reports/dedup_check.md); changes nothing
@@ -41,4 +43,4 @@ segmentation-score: ## compare the human counts with the segmenter (reports/segm
 	$(PY) -m src.segment_score
 test:
 	$(PY) -m pytest -q
-all: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample test
+all: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report test
