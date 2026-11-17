@@ -1,6 +1,6 @@
 PY ?= .venv/bin/python
 
-.PHONY: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric post-cleaning segmentation-sample hinglish-check dedup-check dedup-characterise segmentation-score test all
+.PHONY: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample hinglish-check dedup-check dedup-characterise segmentation-score test all
 check-key: ## fail with a clear message unless FP15_ID_KEY is set (environment or git-ignored .env); the value is never shown
 	$(PY) -m src.id_key
 verify:   ## check raw hash manifest (writes it on first run)
@@ -24,6 +24,8 @@ company-columns: ## propose the 20 most useful Company_Data columns and their fi
 	$(PY) -m src.company_columns
 company-numeric: ## numeric LatestRevenueUSD, NumberofEmployees and ProfitUSD2024 (reports/company_numeric.md)
 	$(PY) -m src.company_numeric
+ceo-gender-counts: ## ceo_type split per leader and Company_Data Gender counts as coded (reports/ceo_type_gender_counts.md); counts only
+	$(PY) -m src.ceo_gender_counts
 post-cleaning: check-key ## dedupe, clean interface lines into a new column, parse age and language (reports/post_cleaning.md)
 	$(PY) -m src.post_cleaning
 segmentation-sample: check-key ## draw the 200-cell blind check sample for the human (data/derived, git-ignored); never overwrites it
@@ -39,4 +41,4 @@ segmentation-score: ## compare the human counts with the segmenter (reports/segm
 	$(PY) -m src.segment_score
 test:
 	$(PY) -m pytest -q
-all: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric post-cleaning segmentation-sample test
+all: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample test
