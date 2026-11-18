@@ -53,6 +53,8 @@ class CoverageCounts:
     at_cut: int
     raw_cells: int
     min_posts: int
+    unlinked: int
+    unlinked_at_cut: int
 
 
 def _require(frame: pd.DataFrame, columns: tuple[str, ...], name: str) -> None:
@@ -96,13 +98,14 @@ def coverage_counts(proposal: pd.DataFrame, leaders: pd.DataFrame, min_posts: in
     """Count the lists, their overlap and the leaders with posts, cut on raw cells (cells stand in for posts)."""
     _require(proposal, PROPOSAL_COLUMNS, "leader_id_proposal")
     _require(leaders, LEADER_COLUMNS, "leader_table")
-    unknown = set(leaders[LEADER_ID]) - set(proposal[LEADER_ID])
-    if unknown:
-        raise ValueError(f"leader_table: {len(unknown)} leader ids are not in the proposal")
+    # The proposal leaves leader_id blank on ambiguous name keys, so a leader_table id can be absent from it. Such
+    # leaders are counted as leaders with cells but are never matched to a list entry (that would be a guess).
+    linked = {leader for leader in proposal[LEADER_ID] if leader}
     cell_map = {
         leader: _cell_count(value) for leader, value in zip(leaders[LEADER_ID], leaders[CELL_COUNT], strict=True)
     }
     cells = proposal[LEADER_ID].map(lambda leader: cell_map.get(leader, 0)).astype(int)
+    unlinked_cells = [cell for leader, cell in cell_map.items() if leader not in linked]
     listed = {key: _listed(proposal[key]) for key in (*(k for k, _ in THREE_LISTS), SHEETS)}
     lists = tuple(
         ListCoverage(
@@ -118,10 +121,12 @@ def coverage_counts(proposal: pd.DataFrame, leaders: pd.DataFrame, min_posts: in
         ambiguous=int((proposal[STATUS] == AMBIGUOUS).sum()),
         lists=lists,
         overlap=_overlap(listed),
-        with_posts=int((cells >= 1).sum()),
-        at_cut=int((cells >= min_posts).sum()),
-        raw_cells=int(cells.sum()),
+        with_posts=int((cells >= 1).sum()) + sum(cell >= 1 for cell in unlinked_cells),
+        at_cut=int((cells >= min_posts).sum()) + sum(cell >= min_posts for cell in unlinked_cells),
+        raw_cells=int(cells.sum()) + sum(unlinked_cells),
         min_posts=min_posts,
+        unlinked=sum(cell >= 1 for cell in unlinked_cells),
+        unlinked_at_cut=sum(cell >= min_posts for cell in unlinked_cells),
     )
 
 
@@ -142,6 +147,11 @@ def render_coverage(counts: CoverageCounts, settings: EdaSettings) -> list[str]:
         ("of which under an ambiguous name key", show_count(counts.ambiguous, low)),
         ("Leaders with at least 1 raw cell", show_count(counts.with_posts, low)),
         (f"Leaders with at least {counts.min_posts} raw cells", show_count(counts.at_cut, low)),
+        ("Leaders with raw cells but no leader id in the proposal", show_count(counts.unlinked, low)),
+        (
+            f"of which with at least {counts.min_posts} raw cells",
+            show_count(counts.unlinked_at_cut, low),
+        ),
         (f"Leaders with at least {counts.min_posts} posts once segmented", "not computed"),
         ("Raw cells, all leaders (cells, not leaders)", f"{counts.raw_cells:,}"),
     ]

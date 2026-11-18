@@ -101,11 +101,47 @@ def test_a_leader_with_a_blank_or_zero_cell_count_is_not_with_posts() -> None:
     assert counts.with_posts == 0
 
 
-def test_leader_table_ids_missing_from_the_proposal_raise_a_clear_error() -> None:
-    proposal = _proposal([("L1", "clear", "w#1", "", "", "")])
+def test_leaders_with_no_id_in_the_proposal_are_counted_not_dropped_and_not_guessed() -> None:
+    # The proposal leaves leader_id blank on ambiguous name keys, so these leaders cannot be joined by id.
+    proposal = _proposal([("L1", "clear", "w#1", "", "", ""), ("", "ambiguous", "w#2", "", "s2", "row:2")])
 
-    with pytest.raises(ValueError, match="not in the proposal"):
-        coverage_counts(proposal, _leaders({"L1": 3, "L9": 3}), min_posts=2)
+    counts = coverage_counts(proposal, _leaders({"L1": 3, "L9": 4, "L8": 1}), min_posts=2)
+
+    assert counts.unlinked == 2
+    assert counts.unlinked_at_cut == 1
+    assert counts.with_posts == 3
+    assert counts.at_cut == 2
+    assert counts.raw_cells == 8
+    assert counts.union == 2
+
+
+def test_unlinked_leaders_are_not_added_to_any_source_list_or_overlap_row() -> None:
+    proposal = _proposal([("L1", "clear", "w#1", "row:1", "", ""), ("", "ambiguous", "w#2", "", "s2", "")])
+
+    counts = coverage_counts(proposal, _leaders({"L1": 3, "L9": 4}), min_posts=2)
+    by_name = {entry.name: entry for entry in counts.lists}
+
+    assert by_name["Post workbooks"] == ListCoverage("Post workbooks", leaders=2, with_cell=1, at_cut=1)
+    assert sum(dict(counts.overlap).values()) == counts.union
+
+
+def test_no_unlinked_leaders_when_every_leader_table_id_is_in_the_proposal(
+    frames: tuple[pd.DataFrame, pd.DataFrame],
+) -> None:
+    counts = coverage_counts(*frames, min_posts=2)
+
+    assert counts.unlinked == 0
+    assert counts.unlinked_at_cut == 0
+
+
+def test_rendering_reports_the_unlinked_leaders_and_hides_small_counts() -> None:
+    proposal = _proposal([("L1", "clear", "w#1", "", "", "")])
+    counts = coverage_counts(proposal, _leaders({"L1": 3, "L9": 4}), min_posts=2)
+
+    loose, strict = _text(counts, LOOSE), _text(counts, STRICT)
+
+    assert "| Leaders with raw cells but no leader id in the proposal | 1 |" in loose
+    assert f"| Leaders with raw cells but no leader id in the proposal | {SMALL} |" in strict
 
 
 @pytest.mark.parametrize("missing", ["status", "roster"])
