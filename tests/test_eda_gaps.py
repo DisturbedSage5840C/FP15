@@ -17,8 +17,8 @@ from src.eda_gaps import (
 )
 from src.name_key import name_key
 
-LOOSE = EdaSettings(min_posts=2, disclosure_min=1, model_min=1)
-STRICT = EdaSettings(min_posts=15, disclosure_min=5, model_min=20)
+LOOSE = EdaSettings(min_posts=2, disclosure_min=1, model_min=1, size_bands=2)
+STRICT = EdaSettings(min_posts=15, disclosure_min=5, model_min=20, size_bands=4)
 SENTINELS = ("Zed Sentinel", "Yara Sentinel", "Xan Sentinel", "Wil Sentinel", "Vic Sentinel")
 A, B, C, D, E = SENTINELS
 POST_COLUMNS = ["leader", "text_kind", "title", "ceo_type", "role_start_year", "post_date", "post_date_text"]

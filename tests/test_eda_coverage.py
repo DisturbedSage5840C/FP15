@@ -12,8 +12,8 @@ from src.eda_coverage import (
     render_coverage,
 )
 
-LOOSE = EdaSettings(min_posts=2, disclosure_min=1, model_min=1)
-STRICT = EdaSettings(min_posts=15, disclosure_min=5, model_min=20)
+LOOSE = EdaSettings(min_posts=2, disclosure_min=1, model_min=1, size_bands=2)
+STRICT = EdaSettings(min_posts=15, disclosure_min=5, model_min=20, size_bands=4)
 PROPOSAL_COLUMNS = ["leader_id", "key", "status", "sheets", "roster", "summaries", "company"]
 LEADER_COLUMNS = ["leader_id", "n_raw_post_cells"]
 

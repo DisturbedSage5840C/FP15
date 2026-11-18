@@ -21,17 +21,18 @@ TOTAL_LABEL = "all"
 
 @dataclass(frozen=True)
 class EdaSettings:
-    """min_posts is the pass mark in thresholds.yaml; the other two are descriptive settings, not pass marks."""
+    """min_posts is the pass mark in thresholds.yaml; the others are descriptive settings, not pass marks."""
 
     min_posts: int
     disclosure_min: int
     model_min: int
+    size_bands: int
 
 
 def load_eda_settings(path: Path = DEFAULT_THRESHOLDS_PATH) -> EdaSettings:
-    """Read the three settings; a missing key is named in the error."""
+    """Read the four settings; a missing key is named in the error."""
     values = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    keys = ("min_posts_per_leader", "eda_disclosure_min_leaders", "eda_model_min_leaders")
+    keys = ("min_posts_per_leader", "eda_disclosure_min_leaders", "eda_model_min_leaders", "eda_size_bands")
     for key in keys:
         if key not in values:
             raise ValueError(f"{path}: missing key {key}")

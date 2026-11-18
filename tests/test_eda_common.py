@@ -15,7 +15,7 @@ from src.eda_common import (
     show_share,
 )
 
-SETTINGS = EdaSettings(min_posts=15, disclosure_min=5, model_min=20)
+SETTINGS = EdaSettings(min_posts=15, disclosure_min=5, model_min=20, size_bands=4)
 
 
 # ---- show_count / show_share ------------------------------------------------------------------
@@ -114,10 +114,11 @@ def _yaml(tmp_path: Path, body: str) -> Path:
 
 def test_settings_are_read_from_the_thresholds_file(tmp_path: Path) -> None:
     path = _yaml(
-        tmp_path, "min_posts_per_leader: 15\neda_disclosure_min_leaders: 5\neda_model_min_leaders: 20\n"
+        tmp_path,
+        "min_posts_per_leader: 15\neda_disclosure_min_leaders: 5\neda_model_min_leaders: 20\neda_size_bands: 4\n",
     )
 
-    assert load_eda_settings(path) == EdaSettings(min_posts=15, disclosure_min=5, model_min=20)
+    assert load_eda_settings(path) == EdaSettings(min_posts=15, disclosure_min=5, model_min=20, size_bands=4)
 
 
 def test_a_missing_key_is_named_in_the_error(tmp_path: Path) -> None:
@@ -127,8 +128,18 @@ def test_a_missing_key_is_named_in_the_error(tmp_path: Path) -> None:
         load_eda_settings(path)
 
 
+def test_a_missing_size_band_key_is_named_in_the_error(tmp_path: Path) -> None:
+    path = _yaml(
+        tmp_path, "min_posts_per_leader: 15\neda_disclosure_min_leaders: 5\neda_model_min_leaders: 20\n"
+    )
+
+    with pytest.raises(ValueError, match="eda_size_bands"):
+        load_eda_settings(path)
+
+
 def test_the_repo_thresholds_file_has_the_eda_settings() -> None:
     settings = load_eda_settings()
 
     assert settings.min_posts == 15
     assert settings.disclosure_min == 5
+    assert settings.size_bands == 4
