@@ -12,14 +12,16 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from src.company_columns import (
-    CLEAR_STATUS,
-    RAW_KIND,
-    _company_position,
-    leader_post_counts,
-)
+from src.company_columns import RAW_KIND, leader_post_counts
 from src.company_data import clean_cell, parse_quantity
 from src.eda_common import SMALL, EdaSettings, protect_cells, show_count
+from src.eda_groups import (
+    AMBIGUOUS,
+    NO_COMPANY_ROW,
+    NOT_IN_PROPOSAL,
+    classify_matches,
+    proposal_lookup,
+)
 from src.harmonise_report import _table
 from src.name_key import name_key
 
@@ -125,30 +127,6 @@ def _post_rows(flags: pd.DataFrame, members: set[str]) -> tuple[GapRow, ...]:
 # ---- Company_Data variables -------------------------------------------------------------------
 
 
-def _classify(
-    members: set[str], lookup: dict[str, tuple[str, str]], company_rows: int
-) -> tuple[list[int], dict[str, int]]:
-    """Company row positions of leaders with a clear match, and the counts of every other outcome."""
-    positions: list[int] = []
-    others = {"ambiguous": 0, "no_company_row": 0, "not_in_proposal": 0}
-    for key in members:
-        if key not in lookup:
-            others["not_in_proposal"] += 1
-            continue
-        status, ref = lookup[key]
-        if status != CLEAR_STATUS:
-            others["ambiguous"] += 1
-            continue
-        position = _company_position(ref)
-        if position is None:
-            others["no_company_row"] += 1
-        elif position >= company_rows:
-            raise ValueError(f"leader_id_proposal: company reference {ref} is beyond the {company_rows} company rows")
-        else:
-            positions.append(position)
-    return positions, others
-
-
 def _is_missing(value: object, is_number: bool) -> bool:
     return parse_quantity(value) is None if is_number else clean_cell(value) is None
 
@@ -174,15 +152,16 @@ def _company_rows(company: pd.DataFrame, positions: list[int]) -> tuple[GapRow, 
 def _base(
     members: set[str], flags: pd.DataFrame, lookup: dict[str, tuple[str, str]], company: pd.DataFrame
 ) -> GapBase:
-    positions, others = _classify(members, lookup, len(company))
+    matched, others = classify_matches(members, lookup, len(company))
+    positions = list(matched.values())
     post_rows = _post_rows(flags, members)
     return GapBase(
         leaders=len(members),
         cells=post_rows[0].cells,
         matched=len(positions),
-        ambiguous=others["ambiguous"],
-        no_company_row=others["no_company_row"],
-        not_in_proposal=others["not_in_proposal"],
+        ambiguous=others[AMBIGUOUS],
+        no_company_row=others[NO_COMPANY_ROW],
+        not_in_proposal=others[NOT_IN_PROPOSAL],
         rows=(*post_rows, *_company_rows(company, positions)),
     )
 
@@ -197,10 +176,7 @@ def gap_counts(posts: pd.DataFrame, proposal: pd.DataFrame, company: pd.DataFram
     keep = keys != ""
     flags = _blank_flags(raw[keep], keys[keep])
     cells = leader_post_counts(posts)
-    lookup = {
-        key: (status, ref)
-        for key, status, ref in zip(proposal["key"], proposal["status"], proposal["company"], strict=True)
-    }
+    lookup = proposal_lookup(proposal)
     everyone = {key for key, count in cells.items() if count >= 1}
     at_cut = {key for key, count in cells.items() if count >= min_posts}
     return GapCounts(
