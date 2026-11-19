@@ -38,3 +38,4 @@ One make target per stage (see Makefile). `make all` rebuilds every table and fi
 - Do not decide what a construct means, code gold-set posts, or sign off a gate. Those are human jobs. Stop and ask.
 - Small commits, one stage at a time. Report numbers as committed files in reports/, not pasted from memory.
 - If something in the data surprises you, write it in docs/decisions.md under "Findings" and say so; do not quietly fix it.
+- Commit messages carry no AI co-author trailers, session links or 'Generated with' lines.
