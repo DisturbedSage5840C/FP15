@@ -16,7 +16,10 @@ it says nothing about personality. Plural voice is reported beside it so the two
 Known limitations (stated, not fixed)
 - A standalone capital I can be a Roman numeral ("Phase I"). It is counted as first-person singular anyway, because
   telling the two apart needs judgment this counter does not make. A test records the current behaviour.
-- Matching ignores case, so "US" (the country) counts as the plural "us", and "mine" as a noun counts as a pronoun.
+- The all-caps "US" is not counted as the plural "us", because it is almost always the country ("the US market").
+  It is still one word in total_words, so the share's denominator stays right. "us" and "Us" still count. The blind
+  spot: a sentence written in capitals ("TELL US NOW") loses its real plural "US", so plural is undercounted there.
+- "mine" as a noun ("a gold mine") counts as a pronoun.
 - Negation is not handled (see src.dictionary_matcher): "not my decision" counts "my".
 """
 from __future__ import annotations
@@ -32,6 +35,8 @@ from src.dictionary_matcher import match_entries, tokenise
 DEFAULT_PRONOUNS_PATH = Path(__file__).resolve().parent.parent / "configs" / "pronouns.yaml"
 SINGULAR_KEY = "first_person_singular"
 PLURAL_KEY = "first_person_plural"
+# Exact-case tokens that are words but never pronouns here: the country, not the plural "us".
+NOT_A_PRONOUN_TOKENS = ("US",)
 
 
 @dataclass(frozen=True)
@@ -87,7 +92,11 @@ def count_voice(text: str, pronouns: PronounLists | None = None) -> VoiceCounts:
     Uses the lists in configs/pronouns.yaml unless `pronouns` is given. Raises TypeError for a non-str text.
     """
     lists = pronouns if pronouns is not None else _default_pronouns()
-    result = match_entries(text, {"singular": lists.singular, "plural": lists.plural})
+    result = match_entries(
+        text,
+        {"singular": lists.singular, "plural": lists.plural},
+        ignore_exact=NOT_A_PRONOUN_TOKENS,
+    )
     singular = result.category_counts["singular"]
     total_words = result.total_words
     return VoiceCounts(

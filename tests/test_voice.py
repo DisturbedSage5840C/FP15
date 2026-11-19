@@ -141,6 +141,37 @@ def test_a_text_with_no_words_has_no_share_instead_of_a_made_up_zero(empty_text:
     assert counts.singular_share is None
 
 
+# ---- the all-caps "US" rule -------------------------------------------------------------------
+
+
+def test_the_all_caps_token_us_is_not_counted_as_first_person_plural() -> None:
+    assert count_voice("the US market").plural == 0
+
+
+def test_lower_case_us_is_still_counted_as_first_person_plural() -> None:
+    assert count_voice("tell us").plural == 1
+
+
+def test_capitalised_us_at_the_start_of_a_sentence_is_still_counted() -> None:
+    assert count_voice("Us too").plural == 1
+
+
+def test_the_ignored_all_caps_us_is_still_a_word_in_the_total() -> None:
+    counts = count_voice("the US market")
+
+    assert counts.total_words == 3
+    assert counts.singular_share == 0.0
+
+
+def test_a_text_with_both_us_spellings_counts_only_the_lower_case_one() -> None:
+    assert count_voice("US firms tell us what we need").plural == 2
+
+
+def test_a_sentence_written_entirely_in_capitals_loses_its_us_known_blind_spot() -> None:
+    # Records the CURRENT behaviour, not an endorsement: in an all-caps sentence "US" is a pronoun but is ignored.
+    assert count_voice("TELL US NOW").plural == 0
+
+
 # ---- known limitation: Roman numeral I --------------------------------------------------------
 
 
@@ -181,3 +212,10 @@ def test_the_docstring_says_the_share_is_one_signal_and_not_a_narcissism_score()
     assert "one signal" in doc
     assert "not a narcissism score" in doc
     assert "Roman numeral" in doc
+
+
+def test_the_docstring_states_the_all_caps_us_rule_and_its_blind_spot() -> None:
+    doc = voice.__doc__ or ""
+
+    assert 'all-caps "US"' in doc
+    assert "in capitals" in doc

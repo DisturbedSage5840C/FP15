@@ -6,7 +6,7 @@ import re
 import pytest
 
 from src import dictionary_matcher
-from src.dictionary_matcher import MatchResult, Overlap, match_entries
+from src.dictionary_matcher import MatchResult, Overlap, SpanOverlap, match_entries
 
 
 def _count(text: str, entries: list[str]) -> int:
@@ -89,10 +89,71 @@ def test_overlapping_candidates_are_taken_longest_first_not_leftmost_first() -> 
     assert _count("never give up now", ["never give", "give up now", "now"]) == 1
 
 
-def test_a_longer_entry_in_one_category_takes_the_span_from_a_shorter_entry_in_another() -> None:
-    result = match_entries("never give up", {"cat_a": ["never give up"], "cat_b": ["never"]})
+def test_a_phrase_in_one_category_does_not_suppress_a_shorter_entry_in_another() -> None:
+    result = match_entries("I never give up", {"cat_a": ["never give up"], "cat_b": ["never"]})
 
-    assert dict(result.category_counts) == {"cat_a": 1, "cat_b": 0}
+    assert dict(result.category_counts) == {"cat_a": 1, "cat_b": 1}
+
+
+def test_categories_are_independent_whatever_their_order() -> None:
+    result = match_entries("I never give up", {"cat_b": ["never"], "cat_a": ["never give up"]})
+
+    assert dict(result.category_counts) == {"cat_b": 1, "cat_a": 1}
+
+
+def test_longest_first_still_applies_within_one_category() -> None:
+    assert _count("Never give up now.", ["give up", "give"]) == 1
+
+
+# ---- cross-category span overlaps (reported for a human, never resolved) ----------------------
+
+
+def test_spans_that_overlap_across_categories_are_reported_per_pair() -> None:
+    result = match_entries("I never give up", {"cat_a": ["never give up"], "cat_b": ["never"]})
+
+    assert result.span_overlaps == (SpanOverlap(("cat_a", "cat_b"), first_overlapped=1, second_overlapped=1),)
+
+
+def test_span_overlaps_count_each_side_separately() -> None:
+    result = match_entries("never give up", {"cat_a": ["never give up"], "cat_b": ["never", "up"]})
+
+    assert result.span_overlaps == (SpanOverlap(("cat_a", "cat_b"), first_overlapped=1, second_overlapped=2),)
+
+
+def test_a_partial_overlap_is_reported_as_well_as_a_containing_one() -> None:
+    result = match_entries("never give up", {"cat_a": ["give up"], "cat_b": ["never give"]})
+
+    assert result.span_overlaps == (SpanOverlap(("cat_a", "cat_b"), first_overlapped=1, second_overlapped=1),)
+
+
+def test_spans_that_only_touch_or_are_far_apart_are_not_overlaps() -> None:
+    assert match_entries("never give", {"cat_a": ["never"], "cat_b": ["give"]}).span_overlaps == ()
+    assert match_entries("never mind give", {"cat_a": ["never"], "cat_b": ["give"]}).span_overlaps == ()
+
+
+def test_spans_of_the_same_category_are_never_reported_against_each_other() -> None:
+    assert match_entries("never give up", {"cat": ["never give up", "never", "up"]}).span_overlaps == ()
+
+
+def test_only_pairs_with_an_overlap_are_listed_in_category_order() -> None:
+    result = match_entries("never give up. A plum.", {"a": ["never give"], "b": ["give up"], "c": ["plum"]})
+
+    assert [overlap.categories for overlap in result.span_overlaps] == [("a", "b")]
+
+
+def test_an_entry_in_two_categories_is_both_counted_twice_and_reported_as_overlapping() -> None:
+    result = match_entries("An apple.", {"cat_a": ["apple"], "cat_b": ["apple"]})
+
+    assert dict(result.category_counts) == {"cat_a": 1, "cat_b": 1}
+    assert result.overlaps == (Overlap(entry="apple", categories=("cat_a", "cat_b")),)
+    assert result.span_overlaps == (SpanOverlap(("cat_a", "cat_b"), first_overlapped=1, second_overlapped=1),)
+
+
+def test_reporting_overlaps_does_not_change_any_count() -> None:
+    plain = match_entries("never give up", {"cat_a": ["never give up"], "cat_b": ["plum"]})
+    overlapping = match_entries("never give up", {"cat_a": ["never give up"], "cat_b": ["never"]})
+
+    assert plain.category_counts["cat_a"] == overlapping.category_counts["cat_a"] == 1
 
 
 # ---- apostrophes ------------------------------------------------------------------------------
@@ -159,6 +220,38 @@ def test_negation_is_not_handled_so_a_negated_entry_still_counts() -> None:
 
 def test_the_module_docstring_states_that_negation_is_not_handled() -> None:
     assert "NEGATION IS NOT HANDLED" in (dictionary_matcher.__doc__ or "")
+
+
+def test_the_module_docstring_states_categories_are_independent_and_overlaps_are_only_reported() -> None:
+    doc = dictionary_matcher.__doc__ or ""
+
+    assert "independently" in doc
+    assert "span_overlaps" in doc
+    assert "never resolved" in doc
+
+
+# ---- exact-case tokens that are counted as words but never matched ----------------------------
+
+
+def test_a_token_spelled_exactly_like_an_ignore_entry_is_a_word_but_never_matches() -> None:
+    result = match_entries("The US market, tell us.", {"cat": ["us"]}, ignore_exact=["US"])
+
+    assert result.category_counts["cat"] == 1
+    assert result.total_words == 5
+
+
+def test_without_an_ignore_entry_the_case_variants_all_match() -> None:
+    assert _count("The US market, tell us. Us too.", ["us"]) == 3
+
+
+def test_an_ignored_token_does_not_complete_a_phrase() -> None:
+    assert _count("tell US", ["tell us"]) == 1
+    assert match_entries("tell US", {"cat": ["tell us"]}, ignore_exact=["US"]).category_counts["cat"] == 0
+
+
+def test_ignore_exact_must_be_a_list_not_one_string() -> None:
+    with pytest.raises(TypeError):
+        match_entries("tell US", {"cat": ["us"]}, ignore_exact="US")  # type: ignore[arg-type]
 
 
 def test_total_words_counts_hyphenated_words_and_contractions_as_one_word_each() -> None:
