@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'">
+<title>G1 hand count</title>
+<style>
+  :root {
+    --bg: #fafaf7; --panel: #ffffff; --text: #1d1d1b; --muted: #5f5f5a; --line: #d9d8d0;
+    --accent: #1f5fbf; --accent-text: #ffffff; --bad: #b3261e; --good: #1b6e3c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16161a; --panel: #1f1f25; --text: #ececea; --muted: #a2a29c; --line: #3a3a42;
+      --accent: #7aa7f0; --accent-text: #101014; --bad: #f2877f; --good: #6fcf97;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, sans-serif; }
+  main { max-width: 52rem; margin: 0 auto; padding: 1rem 16px 3rem; }
+  h1 { font-size: 1.3rem; margin: 0.5rem 0; }
+  .note, .hint { color: var(--muted); font-size: 0.9rem; margin: 0.25rem 0 0.75rem; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+  [hidden] { display: none !important; }
+  .row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0.5rem 0; }
+  .row.between { justify-content: space-between; }
+  label { display: block; font-weight: 600; margin: 0.5rem 0 0.2rem; }
+  input[type="text"] { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--line);
+    border-radius: 6px; padding: 0.4rem 0.6rem; width: 100%; }
+  input[type="text"][aria-invalid="true"] { border-color: var(--bad); }
+  #count { max-width: 10rem; font-size: 1.4rem; }
+  #jump { width: 6rem; }
+  button { font: inherit; border: 1px solid var(--line); background: var(--panel); color: var(--text);
+    border-radius: 6px; padding: 0.4rem 0.9rem; cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  button:focus-visible, input:focus-visible, #post:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  #post { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--bg); border: 1px solid var(--line);
+    border-radius: 6px; padding: 0.75rem; max-height: 55vh; overflow: auto; margin: 0.5rem 0; }
+  #who { font-weight: 600; }
+  #status { min-height: 1.5rem; margin: 0.5rem 0; }
+  #status.bad { color: var(--bad); }
+  #status.good { color: var(--good); }
+</style>
+</head>
+<body>
+<main>
+  <h1>G1 hand count</h1>
+  <p class="note">This page runs only on this computer. It makes no network requests and sends nothing anywhere.
+    Your counts are kept in this browser as you type; Export writes a new file and never changes the originals.</p>
+
+  <section id="load">
+    <label for="sheetFile">1. Sample sheet (segmentation_check_200.csv)</label>
+    <input id="sheetFile" type="file" accept=".csv">
+    <label for="namesFile">2. Names lookup (segmentation_check_200_names.csv)</label>
+    <input id="namesFile" type="file" accept=".csv">
+    <p class="hint" id="loadState">Pick both files to start.</p>
+  </section>
+
+  <section id="cell" hidden>
+    <div class="row between">
+      <strong id="where"></strong>
+      <span id="progress" class="note"></span>
+    </div>
+    <div id="who"></div>
+    <div class="hint" id="guardHint" hidden>A leading ' on the text is a spreadsheet guard added when the sheet was written. It is not part of the post.</div>
+    <div id="post" tabindex="0"></div>
+
+    <label for="count">Post count (whole number)</label>
+    <input id="count" type="text" inputmode="numeric" autocomplete="off">
+    <label for="note">Note (optional)</label>
+    <input id="note" type="text" autocomplete="off">
+
+    <div class="row">
+      <button id="prev" type="button">Previous</button>
+      <button id="next" type="button">Next</button>
+      <button id="nextBlank" type="button">Next uncounted</button>
+      <label for="jump" style="margin:0">Go to cell</label>
+      <input id="jump" type="text" inputmode="numeric" autocomplete="off">
+      <button id="go" type="button">Go</button>
+    </div>
+    <div class="row">
+      <button id="export" type="button" class="primary">Export segmentation_check_200_counted.csv</button>
+    </div>
+  </section>
+
+  <p id="status" role="status"></p>
+  <p class="note" id="storageWarning" hidden>Browser storage is not available here, so progress will not survive closing this tab. Export before you close it.</p>
+</main>
+
+<script id="logic">
+const Counter = (function () {
+  "use strict";
+  const SHEET_COLUMNS = ["n", "leader_id", "ref", "post_text", "human_post_count", "human_note"];
+  const NAMES_COLUMNS = ["n", "leader_name", "company_name"];
+  const FORMULA_TRIGGERS = ["=", "+", "-", "@", "\t", "\r"];
+  const WHOLE_NUMBER = /^[0-9]+$/;
+  const MAX_LISTED = 10;
+
+  function hasOwn(object, key) {
+    return Object.prototype.hasOwnProperty.call(object, key);
+  }
+
+  function listCells(items) {
+    const shown = items.slice(0, MAX_LISTED).join(", ");
+    return items.length > MAX_LISTED ? shown + " and " + (items.length - MAX_LISTED) + " more" : shown;
+  }
+
+  /* Standard CSV: quoted fields may hold commas, doubled quotes and line breaks, kept exactly as written. */
+  function parseCsv(text) {
+    const source = text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text;
+    const rows = [];
+    let row = [];
+    let field = "";
+    let inQuotes = false;
+    let atFieldStart = true;
+    for (let i = 0; i < source.length; i += 1) {
+      const ch = source[i];
+      if (inQuotes) {
+        if (ch === '"' && source[i + 1] === '"') { field += '"'; i += 1; }
+        else if (ch === '"') { inQuotes = false; }
+        else { field += ch; }
+      } else if (ch === '"' && atFieldStart) {
+        inQuotes = true;
+        atFieldStart = false;
+      } else if (ch === ",") {
+        row.push(field); field = ""; atFieldStart = true;
+      } else if (ch === "\n" || ch === "\r") {
+        if (ch === "\r" && source[i + 1] === "\n") { i += 1; }
+        row.push(field);
+        rows.push(row);
+        row = []; field = ""; atFieldStart = true;
+      } else {
+        field += ch;
+        atFieldStart = false;
+      }
+    }
+    if (field !== "" || row.length > 0) { row.push(field); rows.push(row); }
+    return rows.filter(function (r) { return !(r.length === 1 && r[0] === ""); });
+  }
+
+  function readTable(text, required, label) {
+    const rows = parseCsv(text);
+    if (rows.length === 0) { return { ok: false, message: label + " is empty." }; }
+    const header = rows[0].map(function (name) { return name.trim(); });
+    const missing = required.filter(function (name) { return header.indexOf(name) < 0; });
+    if (missing.length > 0) {
+      return { ok: false, message: label + " is missing columns: " + missing.join(", ") + "." };
+    }
+    const records = [];
+    for (let r = 1; r < rows.length; r += 1) {
+      if (rows[r].length > header.length) {
+        return { ok: false, message: label + ": data row " + r + " has more cells than the header." };
+      }
+      const record = {};
+      required.forEach(function (name) {
+        const at = header.indexOf(name);
+        record[name] = at < rows[r].length ? rows[r][at] : "";
+      });
+      records.push(record);
+    }
+    const seen = {};
+    for (let k = 0; k < records.length; k += 1) {
+      const n = records[k].n;
+      if (!WHOLE_NUMBER.test(n)) { return { ok: false, message: label + ": data row " + (k + 1) + " has no whole-number n." }; }
+      if (hasOwn(seen, n)) { return { ok: false, message: label + ": n = " + n + " appears more than once." }; }
+      seen[n] = true;
+    }
+    return { ok: true, rows: records };
+  }
+
+  function readSheet(text) { return readTable(text, SHEET_COLUMNS, "The sample sheet"); }
+  function readNames(text) { return readTable(text, NAMES_COLUMNS, "The names file"); }
+
+  function joinNames(sheetRows, nameRows) {
+    const byN = {};
+    nameRows.forEach(function (row) {
+      byN[row.n] = { leader_name: row.leader_name, company_name: row.company_name };
+    });
+    const missing = sheetRows.filter(function (row) { return !hasOwn(byN, row.n); }).map(function (row) { return row.n; });
+    if (missing.length > 0) {
+      return { ok: false, message: "The names file has no row for n = " + listCells(missing) + "." };
+    }
+    return { ok: true, byN: byN };
+  }
+
+  function validateCount(raw) {
+    const text = String(raw === undefined || raw === null ? "" : raw).trim();
+    if (text === "") { return { ok: false, reason: "blank" }; }
+    if (!WHOLE_NUMBER.test(text)) { return { ok: false, reason: "not a whole number" }; }
+    return { ok: true, value: text.replace(/^0+(?=[0-9])/, "") };
+  }
+
+  function entryFor(progress, n) {
+    return hasOwn(progress, n) ? progress[n] : { count: "", note: "" };
+  }
+
+  function countDone(rows, progress) {
+    return rows.filter(function (row) { return validateCount(entryFor(progress, row.n).count).ok; }).length;
+  }
+
+  function cleanProgress(saved, rows) {
+    const cleaned = {};
+    if (saved === null || typeof saved !== "object") { return cleaned; }
+    rows.forEach(function (row) {
+      if (!hasOwn(saved, row.n)) { return; }
+      const entry = saved[row.n];
+      if (entry !== null && typeof entry === "object" && typeof entry.count === "string" && typeof entry.note === "string") {
+        cleaned[row.n] = { count: entry.count, note: entry.note };
+      }
+    });
+    return cleaned;
+  }
+
+  function hash(text, seed) {
+    let h = seed >>> 0;
+    for (let i = 0; i < text.length; i += 1) {
+      h ^= text.charCodeAt(i);
+      h = Math.imul(h, 16777619) >>> 0;
+    }
+    return ("00000000" + h.toString(16)).slice(-8);
+  }
+
+  /* Identifies this sheet for saved progress without storing any of its text. */
+  function fingerprint(rows) {
+    const joined = rows.map(function (row) { return row.n + "|" + row.ref; }).join("\n");
+    return rows.length + "-" + hash(joined, 2166136261) + hash(joined, 5381);
+  }
+
+  function csvField(value) {
+    return /[",\r\n]/.test(value) ? '"' + value.replace(/"/g, '""') + '"' : value;
+  }
+
+  function spreadsheetSafe(value) {
+    return value !== "" && FORMULA_TRIGGERS.indexOf(value[0]) >= 0 ? "'" + value : value;
+  }
+
+  function buildExport(rows, progress) {
+    const problems = [];
+    rows.forEach(function (row) {
+      const check = validateCount(entryFor(progress, row.n).count);
+      if (!check.ok) { problems.push({ n: row.n, reason: check.reason }); }
+    });
+    if (problems.length > 0) {
+      const listed = listCells(problems.map(function (p) { return "n = " + p.n + " (" + p.reason + ")"; }));
+      return {
+        ok: false,
+        problems: problems,
+        message: "Export refused: " + problems.length + " cell(s) need a whole-number count: " + listed + ".",
+      };
+    }
+    const lines = [SHEET_COLUMNS.join(",")];
+    rows.forEach(function (row) {
+      const entry = entryFor(progress, row.n);
+      const cells = [row.n, row.leader_id, row.ref, row.post_text, validateCount(entry.count).value, spreadsheetSafe(entry.note)];
+      lines.push(cells.map(csvField).join(","));
+    });
+    return { ok: true, csv: lines.join("\n") + "\n" };
+  }
+
+  return {
+    SHEET_COLUMNS: SHEET_COLUMNS,
+    parseCsv: parseCsv,
+    readSheet: readSheet,
+    readNames: readNames,
+    joinNames: joinNames,
+    validateCount: validateCount,
+    countDone: countDone,
+    cleanProgress: cleanProgress,
+    fingerprint: fingerprint,
+    buildExport: buildExport,
+  };
+})();
+</script>
+
+<script id="app">
+(function () {
+  "use strict";
+  const EXPORT_NAME = "segmentation_check_200_counted.csv";
+  const el = function (id) { return document.getElementById(id); };
+  let sheetRows = null;
+  let namesRows = null;
+  let namesByN = null;
+  let progress = {};
+  let index = 0;
+  let storageKey = "";
+
+  function say(message, kind) {
+    const box = el("status");
+    box.textContent = message;
+    box.className = kind || "";
+  }
+
+  function storageGet(key) {
+    try { return window.localStorage.getItem(key); } catch (error) { el("storageWarning").hidden = false; return null; }
+  }
+
+  function storageSet(key, value) {
+    try { window.localStorage.setItem(key, value); } catch (error) { el("storageWarning").hidden = false; }
+  }
+
+  function loadSaved() {
+    storageKey = "fp15-g1-counts:" + Counter.fingerprint(sheetRows);
+    let saved = null;
+    try { saved = JSON.parse(storageGet(storageKey) || "null"); } catch (error) { saved = null; }
+    progress = Counter.cleanProgress(saved, sheetRows);
+    const at = parseInt(storageGet(storageKey + ":at") || "0", 10);
+    index = at >= 0 && at < sheetRows.length ? at : 0;
+  }
+
+  function save() {
+    storageSet(storageKey, JSON.stringify(progress));
+    storageSet(storageKey + ":at", String(index));
+  }
+
+  function current() { return sheetRows[index]; }
+
+  function entry() {
+    const n = current().n;
+    return Object.prototype.hasOwnProperty.call(progress, n) ? progress[n] : { count: "", note: "" };
+  }
+
+  function refreshProgress() {
+    el("progress").textContent = Counter.countDone(sheetRows, progress) + " of " + sheetRows.length + " cells have a count";
+    const typed = el("count").value;
+    el("count").setAttribute("aria-invalid", typed.trim() !== "" && !Counter.validateCount(typed).ok ? "true" : "false");
+  }
+
+  function render() {
+    const row = current();
+    const who = namesByN[row.n];
+    el("where").textContent = "Cell n = " + row.n + " (" + (index + 1) + " of " + sheetRows.length + ")";
+    el("who").textContent = who.leader_name + (who.company_name ? " , " + who.company_name : "");
+    el("post").textContent = row.post_text;
+    el("guardHint").hidden = row.post_text.charAt(0) !== "'";
+    el("count").value = entry().count;
+    el("note").value = entry().note;
+    el("post").scrollTop = 0;
+    refreshProgress();
+    save();
+  }
+
+  function goTo(newIndex) {
+    if (newIndex < 0 || newIndex >= sheetRows.length) { return; }
+    index = newIndex;
+    say("");
+    render();
+  }
+
+  function remember() {
+    const n = current().n;
+    const next = Object.assign({}, progress);
+    next[n] = { count: el("count").value, note: el("note").value };
+    progress = next;
+    save();
+    refreshProgress();
+  }
+
+  function nextUncounted() {
+    for (let step = 1; step <= sheetRows.length; step += 1) {
+      const at = (index + step) % sheetRows.length;
+      const stored = Object.prototype.hasOwnProperty.call(progress, sheetRows[at].n) ? progress[sheetRows[at].n].count : "";
+      if (!Counter.validateCount(stored).ok) { goTo(at); return; }
+    }
+    say("Every cell has a valid count.", "good");
+  }
+
+  function jump() {
+    const wanted = el("jump").value.trim();
+    const at = sheetRows.findIndex(function (row) { return row.n === wanted.replace(/^0+(?=[0-9])/, ""); });
+    if (at < 0) { say("No cell with n = " + wanted + ".", "bad"); return; }
+    el("jump").value = "";
+    goTo(at);
+  }
+
+  function download(text) {
+    const blob = new Blob([text], { type: "text/csv;charset=utf-8" });
+    const link = document.createElement("a");
+    const address = URL.createObjectURL(blob);
+    link.href = address;
+    link.download = EXPORT_NAME;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function () { URL.revokeObjectURL(address); }, 1000);
+  }
+
+  function exportCounts() {
+    const result = Counter.buildExport(sheetRows, progress);
+    if (!result.ok) {
+      const first = sheetRows.findIndex(function (row) { return row.n === result.problems[0].n; });
+      goTo(first);
+      say(result.message, "bad");
+      return;
+    }
+    download(result.csv);
+    say("Wrote " + EXPORT_NAME + " (" + sheetRows.length + " cells) to your downloads folder. The original sheet is unchanged.", "good");
+  }
+
+  function start() {
+    const joined = Counter.joinNames(sheetRows, namesRows);
+    if (!joined.ok) { el("cell").hidden = true; say(joined.message, "bad"); return; }
+    namesByN = joined.byN;
+    loadSaved();
+    el("cell").hidden = false;
+    el("loadState").textContent = "Loaded " + sheetRows.length + " cells.";
+    say("");
+    render();
+  }
+
+  function readInto(inputId, reader, assign) {
+    const file = el(inputId).files[0];
+    if (!file) { return; }
+    file.text().then(function (text) {
+      const result = reader(text);
+      if (!result.ok) { say(result.message, "bad"); el("cell").hidden = true; return; }
+      assign(result.rows);
+      el("loadState").textContent = sheetRows && namesRows ? "" : "Pick the other file too.";
+      if (sheetRows && namesRows) { start(); }
+    }, function () { say("That file could not be read.", "bad"); });
+  }
+
+  el("sheetFile").addEventListener("change", function () {
+    readInto("sheetFile", Counter.readSheet, function (rows) { sheetRows = rows; });
+  });
+  el("namesFile").addEventListener("change", function () {
+    readInto("namesFile", Counter.readNames, function (rows) { namesRows = rows; });
+  });
+  el("prev").addEventListener("click", function () { goTo(index - 1); });
+  el("next").addEventListener("click", function () { goTo(index + 1); });
+  el("nextBlank").addEventListener("click", nextUncounted);
+  el("go").addEventListener("click", jump);
+  el("jump").addEventListener("keydown", function (event) { if (event.key === "Enter") { jump(); } });
+  el("count").addEventListener("input", remember);
+  el("note").addEventListener("input", remember);
+  el("count").addEventListener("keydown", function (event) { if (event.key === "Enter") { goTo(index + 1); } });
+  el("export").addEventListener("click", exportCounts);
+})();
+</script>
+</body>
+</html>

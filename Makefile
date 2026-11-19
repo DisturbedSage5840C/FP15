@@ -1,6 +1,6 @@
 PY ?= .venv/bin/python
 
-.PHONY: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report hinglish-check dedup-check dedup-characterise segmentation-score eda eda-variables test all
+.PHONY: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report hinglish-check dedup-check dedup-characterise segmentation-score segmentation-viewer eda eda-variables test all
 check-key: ## fail with a clear message unless FP15_ID_KEY is set (environment or git-ignored .env); the value is never shown
 	$(PY) -m src.id_key
 verify:   ## check raw hash manifest (writes it on first run)
@@ -41,6 +41,8 @@ dedup-characterise: check-key ## describe the content-different groups: size, li
 	$(PY) -m src.dedup_characterise
 segmentation-score: ## compare the human counts with the segmenter (reports/segmentation_check.md); does NOT sign off G1; not part of make all
 	$(PY) -m src.segment_score
+segmentation-viewer: check-key ## private n -> name lookup and the local G1 counting page (data/derived, git-ignored, holds names); counts nothing, does NOT sign off G1; not part of make all
+	$(PY) -m src.segment_viewer
 eda: ## limits of the data we already have, counts only (reports/eda_limitations.md); "<5" under the disclosure minimum; no scraping, no gate signed
 	$(PY) -m src.eda
 eda-variables: ## every variable we hold, its source, study role and fill rate, with a check against the write-up numbers (reports/eda_variable_map.md); counts only; no scraping, no gate signed

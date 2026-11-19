@@ -50,6 +50,7 @@ One make target per stage. Scripts produce every result; there are no notebooks.
 | `make hinglish-check` | Draws up to 30 cells flagged `Hinglish` into a git-ignored file with an empty `human_right` column for the precision check; never overwrites an existing file. |
 | `make segmentation-sample` | Draws the blind 200-cell sample (one cell per leader) with empty human columns; never overwrites an existing sample. The segmenter counts a repost or embedded post as one post by the leader (`is_repost`, embedded text kept out of the leader voice). It is NOT run on all cells until the sample is confirmed | `data/derived/segmentation_check_200.csv` (git-ignored) |
 | `make segmentation-score` | Compares the human counts with the segmenter. Reports a fact, does not sign off G1. Not part of `make all` | `reports/segmentation_check.md` |
+| `make segmentation-viewer` | Writes a private `n` to leader and company lookup and copies a single-file offline counting page, so the human can do the G1 hand count one cell at a time. Counts nothing, holds no segmenter count, never touches the live sample. Not part of `make all` | `data/derived/segmentation_check_200_names.csv`, `data/derived/segmentation_counter.html` (both git-ignored; the names file holds names) |
 | `make test` | Runs the test suite | none |
 | `make all` | Runs the stages above in order | all reports |
 
