@@ -193,3 +193,11 @@ The Hinglish precision file (25 rows, `human_right` still blank) was drawn from 
 - **Backup.** A bundle of the old history sits outside the repo folder (`FP15-backup-names-2026-11-09.bundle`, next to the repo). It is not tracked and still holds the old strings, so keep it private and delete it when it is no longer needed.
 - **Limits.** Clones, forks and downloads made before the push keep the old history and the old names. GitHub can keep unreachable commits viewable by their old hash and in cached views until it garbage-collects them. Removing those needs a request to GitHub support; nothing here does that.
 - **Not covered.** A third person is still named in an earlier entry of this file (see the open item in the step 7 report). This rewrite did not touch it because it was outside the instruction.
+
+## 2026-11-20: status email to the mentors, pending decisions and answers (step 8, housekeeping)
+
+- **Status email sent** to the three mentors and the data owner's contact (named by role here, not by name, because the repo is public and the 2026-11-09 history rewrite removed names).
+- **Five decisions are pending, all human:** (1) the research framing; (2) the written meaning of personal vs professional; (3) the sector grouping; (4) the word lists and controls; (5) engagement data, which needs written scraping approval.
+- **Pending answers from the data owner:** what gender 1 and 0 mean; the collection date; role_start_year and post_date (see the CLAUDE.md line and reports/eda_variable_map.md for how little is filled); the fiscal year basis.
+- **The engagement subquestion is blocked.** There are no verified likes, comments or reposts, and scraping is not approved. Nothing was built for it.
+- No gated work was started in this step: no dictionaries, no models, no gold set. No gate was signed off.
