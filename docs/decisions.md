@@ -210,3 +210,15 @@ The Hinglish precision file (25 rows, `human_right` still blank) was drawn from 
 - **Proposal, waiting for mentor approval: `gold_set_max_posts_per_leader: 3`.** It is a proposal, not a decision. At 3 posts per leader, 300 posts need at least 100 different leaders, so no leader can supply more than 1% of the gold set. It stays in `configs/thresholds.yaml` only until the mentors approve a value; if they change it, change it there and log the change here.
 - **Settings added to `configs/thresholds.yaml` for the sampler.** `gold_set_seed: 20261120`, `gold_set_coders: 4`, `gold_set_coders_per_post: 2`. These are settings, not pass marks; the four coders are not yet named or assigned.
 - **Coding sheet.** The real sheet with post text must be generated into a git-ignored folder later and never committed.
+
+## 2026-11-20: open question on the gold-set pool, proposal only (step 10, part 4)
+
+- **Question (not decided).** Should the gold set draw from all leaders with posts (Option A), or only from leaders with at least `min_posts_per_leader` posts (Option B)? The sampler currently draws from whatever table it is given, so this choice is made by the caller.
+- **What the synthetic audit shows** (`make gold-set-audit`, reports/gold_set_sampler_audit.md; invented tables of 560 leaders with about 15% founder-CEOs, about 7% coded gender 0 and heavy-tailed posts per leader; cap 3; 20 seeds; the table shape is an assumption, not an estimate from real data):
+  - Both options drew 300 posts on all 20 seeds, and no stratum that was given a quota failed to fill it.
+  - Under Option B the Founder-CEO by gender-0 stratum had no posts in the pool on 4 of 20 seeds, and a median of 1 leader. The sampler gives an empty stratum no quota and does not report it, so the gold set would silently contain no such post. Under Option A that stratum had a median of 5 leaders and 2 to 5 drawn posts.
+  - Under Option B the pool after the cap held 315 to 438 posts (median 381) for a gold set of 300, so the margin is thin on some seeds: slightly fewer leaders with 15 or more posts would make the sampler refuse.
+  - The proposed cap of 3 fixes only the per-leader limit; it does not decide the pool.
+- **Considerations for the team and mentors.** Option A matches the study population for the measures built on posts, but the gold set then includes leaders who will be excluded from the main analysis (fewer than the minimum posts). Option B matches the main analysis population but over-represents prolific leaders and can leave small strata empty. Which to use is a design choice for the humans; the audit only shows the counts.
+- **Open and separate.** Whether the sampler should report empty strata instead of dropping them is also undecided; the sampler was not changed.
+- No gate was signed off and no real data was read.

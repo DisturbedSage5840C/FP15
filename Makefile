@@ -1,6 +1,6 @@
 PY ?= .venv/bin/python
 
-.PHONY: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report hinglish-check dedup-check dedup-characterise segmentation-score segmentation-viewer eda eda-variables test test-stats all
+.PHONY: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report hinglish-check dedup-check dedup-characterise segmentation-score segmentation-viewer eda eda-variables gold-set-audit test test-stats all
 check-key: ## fail with a clear message unless FP15_ID_KEY is set (environment or git-ignored .env); the value is never shown
 	$(PY) -m src.id_key
 verify:   ## check raw hash manifest (writes it on first run)
@@ -47,6 +47,8 @@ eda: ## limits of the data we already have, counts only (reports/eda_limitations
 	$(PY) -m src.eda
 eda-variables: ## every variable we hold, its source, study role and fill rate, with a check against the write-up numbers (reports/eda_variable_map.md); counts only; no scraping, no gate signed
 	$(PY) -m src.eda_variables
+gold-set-audit: ## gold-set sampler run on invented tables shaped like ours (reports/gold_set_sampler_audit.md); synthetic only, counts only; draws nothing real; not part of make all
+	$(PY) -m src.gold_set_audit
 test:
 	$(PY) -m pytest -q
 test-stats: ## tests for the statistics tools only (agreement, gold-set sampler, shrinkage and BH, and the thresholds loader they share); synthetic data only; not part of make all
