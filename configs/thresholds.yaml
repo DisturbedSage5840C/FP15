@@ -40,6 +40,14 @@ eda_disclosure_min_leaders: 5
 eda_model_min_leaders: 20
 eda_size_bands: 4
 
+# Gold set (gate G2). Sampling and coder settings, not pass marks; gold_set_size itself is the top-level key above.
+# The cap on posts per leader below is a PROPOSAL waiting for mentor approval, NOT a decision (see docs/decisions.md).
+# 3 would force at least 100 different leaders into 300 posts. Nothing has been drawn: G1 is not signed off.
+gold_set_max_posts_per_leader: 3
+gold_set_seed: 20261120
+gold_set_coders: 4
+gold_set_coders_per_post: 2
+
 # Step 5 (scraping and expansion). A HUMAN switch, like reaction_check_confirmed. Keep false until the course mentors approve
 # in writing. While false, tests/test_no_network.py fails if any pipeline code imports a network library or opens a
 # connection. Do not set true on your own: see docs/scraping_spec.md for what must be answered first.
