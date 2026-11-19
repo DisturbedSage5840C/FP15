@@ -201,3 +201,12 @@ The Hinglish precision file (25 rows, `human_right` still blank) was drawn from 
 - **Pending answers from the data owner:** what gender 1 and 0 mean; the collection date; role_start_year and post_date (see the CLAUDE.md line and reports/eda_variable_map.md for how little is filled); the fiscal year basis.
 - **The engagement subquestion is blocked.** There are no verified likes, comments or reposts, and scraping is not approved. Nothing was built for it.
 - No gated work was started in this step: no dictionaries, no models, no gold set. No gate was signed off.
+
+## 2026-11-20: statistics tools built and tested on synthetic data only (step 9)
+
+- **What exists.** `src/agreement.py` (nominal Krippendorff alpha for two or more coders, missing ratings allowed, with a pass or fail against `krippendorff_alpha_min`); `src/gold_set.py` (stratified gold-set sampler with a per-leader cap, and a balanced two-of-four coder assignment); `src/stats_tools.py` (empirical Bayes shrinkage from post scores to leader scores for leaders at or above `min_posts_per_leader`, and Benjamini-Hochberg FDR at `fdr_q`); `templates/gold_coding_sheet.csv` (header only: post_id, coder, label, second_label, is_reshare, note). Run them with `make test-stats`; they are not part of `make all` yet.
+- **Tested on invented data only.** Every test uses made-up tables and ratings. Every threshold is read from `configs/thresholds.yaml`; none is written in the code.
+- **Not run on real data, and nothing was drawn.** G1 is not signed off, so the gold set has not been sampled, no coders have been assigned, and the shrinkage and FDR functions have not been applied to any real score. No word lists were built. No gate was signed off.
+- **Proposal, waiting for mentor approval: `gold_set_max_posts_per_leader: 3`.** It is a proposal, not a decision. At 3 posts per leader, 300 posts need at least 100 different leaders, so no leader can supply more than 1% of the gold set. It stays in `configs/thresholds.yaml` only until the mentors approve a value; if they change it, change it there and log the change here.
+- **Settings added to `configs/thresholds.yaml` for the sampler.** `gold_set_seed: 20261120`, `gold_set_coders: 4`, `gold_set_coders_per_post: 2`. These are settings, not pass marks; the four coders are not yet named or assigned.
+- **Coding sheet.** The real sheet with post text must be generated into a git-ignored folder later and never committed.

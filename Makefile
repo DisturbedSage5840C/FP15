@@ -1,6 +1,6 @@
 PY ?= .venv/bin/python
 
-.PHONY: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report hinglish-check dedup-check dedup-characterise segmentation-score segmentation-viewer eda eda-variables test all
+.PHONY: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report hinglish-check dedup-check dedup-characterise segmentation-score segmentation-viewer eda eda-variables test test-stats all
 check-key: ## fail with a clear message unless FP15_ID_KEY is set (environment or git-ignored .env); the value is never shown
 	$(PY) -m src.id_key
 verify:   ## check raw hash manifest (writes it on first run)
@@ -49,4 +49,6 @@ eda-variables: ## every variable we hold, its source, study role and fill rate, 
 	$(PY) -m src.eda_variables
 test:
 	$(PY) -m pytest -q
+test-stats: ## tests for the statistics tools only (agreement, gold-set sampler, shrinkage and BH, and the thresholds loader they share); synthetic data only; not part of make all
+	$(PY) -m pytest -q tests/test_thresholds.py tests/test_agreement.py tests/test_gold_set.py tests/test_stats_tools.py
 all: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report eda eda-variables test
