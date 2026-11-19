@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "pytest-cov>=5.0", "krippendorff>=0.9"]
+dev = ["pytest>=8.0", "pytest-cov>=5.0", "krippendorff>=0.9", "statsmodels>=0.14"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
