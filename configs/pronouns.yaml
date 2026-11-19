@@ -1,0 +1,6 @@
+# First-person pronoun lists for the voice counter (src/voice.py). Function words only.
+# This file holds NO construct word lists (agentic, communal, trait or other): those are human and mentor decisions.
+# Entries are lower case; the matcher ignores case and treats curly and straight apostrophes the same.
+# A word may be in one list only. "i" also matches a Roman numeral "I" (known limitation, see src/voice.py).
+first_person_singular: [i, me, my, mine, myself, "i'm", "i've", "i'll", "i'd"]
+first_person_plural: [we, us, our, ours, ourselves, "we're", "we've", "we'll", "we'd"]
