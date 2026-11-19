@@ -1,6 +1,6 @@
 PY ?= .venv/bin/python
 
-.PHONY: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report hinglish-check dedup-check dedup-characterise segmentation-score eda test all
+.PHONY: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report hinglish-check dedup-check dedup-characterise segmentation-score eda eda-variables test all
 check-key: ## fail with a clear message unless FP15_ID_KEY is set (environment or git-ignored .env); the value is never shown
 	$(PY) -m src.id_key
 verify:   ## check raw hash manifest (writes it on first run)
@@ -43,6 +43,8 @@ segmentation-score: ## compare the human counts with the segmenter (reports/segm
 	$(PY) -m src.segment_score
 eda: ## limits of the data we already have, counts only (reports/eda_limitations.md); "<5" under the disclosure minimum; no scraping, no gate signed
 	$(PY) -m src.eda
+eda-variables: ## every variable we hold, its source, study role and fill rate, with a check against the write-up numbers (reports/eda_variable_map.md); counts only; no scraping, no gate signed
+	$(PY) -m src.eda_variables
 test:
 	$(PY) -m pytest -q
-all: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report eda test
+all: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report eda eda-variables test

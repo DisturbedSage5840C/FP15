@@ -1,0 +1,18 @@
+# Numbers quoted in the write-up, kept only so `make eda-variables` can compare them with the data.
+# These are NOT thresholds and are never edited to match the data: a difference is a finding, and goes to
+# docs/decisions.md under Findings. Keys are the row keys of reports/eda_variable_map.md.
+# Leaders with at least 1 raw cell (563): ceo_type, current_title.
+ceo_type: 518
+current_title: 517
+# Leaders with a clear Company_Data match (545): gender as coded, sector, firm size, founded year, followers.
+gender_coded: 429
+gender_coded_1: 389
+gender_coded_0: 40
+gender_no_value: 116
+sector: 527
+firm_size: 494
+founded_year: 540
+followers: 377
+# Raw cells (26,945): relative age parsed, cells ending in a number (unverified).
+age_parsed: 25157
+ends_in_number: 7733
