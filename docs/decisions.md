@@ -222,3 +222,11 @@ The Hinglish precision file (25 rows, `human_right` still blank) was drawn from 
 - **Considerations for the team and mentors.** Option A matches the study population for the measures built on posts, but the gold set then includes leaders who will be excluded from the main analysis (fewer than the minimum posts). Option B matches the main analysis population but over-represents prolific leaders and can leave small strata empty. Which to use is a design choice for the humans; the audit only shows the counts.
 - **Open and separate.** Whether the sampler should report empty strata instead of dropping them is also undecided; the sampler was not changed.
 - No gate was signed off and no real data was read.
+
+## 2026-11-21: mentor guidance on outcome measures and extra data, a record and not a sign-off (step 11, part 1)
+
+- **What the mentors asked for.** A firm-outcome measure, ROA or Tobin's q, so that leaders of higher and lower performing firms can be compared. This is guidance, not a decided design: no outcome measure has been chosen.
+- **What the mentors said about extra data.** Additional data may be added manually if the research question needs it. This is **not** recorded as approval to scrape likes, reposts or followers, or to add foreign leaders. `scraping_approved` stays `false` in `configs/thresholds.yaml`. A written clarification has been requested, and until it arrives nobody scrapes anything and the study covers the Indian corporate leaders already in the data.
+- **Meeting planned.** A meeting with the data owners is planned for 2026-11-23 about specific columns.
+- **Open, all human decisions:** (1) which outcome measure; (2) which year window; (3) whether and how to adjust for sector.
+- **What was done in this step.** Only a counts-only check of what Company_Data can support (`reports/outcome_feasibility.md`). No new data, no network, no gate work, and no sign-off line.
