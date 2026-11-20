@@ -11,6 +11,7 @@ touch them. Each leader is in exactly one stratum, as the sampler requires.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
@@ -18,7 +19,7 @@ import pandas as pd
 
 # Private helpers of the sampler are imported on purpose: the audit must use the very quotas and labels the sampler
 # uses, and copying them here would let the two drift apart. Nothing in src/gold_set.py is changed.
-from src.gold_set import GoldSettings, _allocate, _with_labels, load_gold_settings, sample_gold_set
+from src.gold_set import GoldSettings, _with_labels, load_gold_settings, sample_gold_set
 from src.thresholds import load_threshold
 
 DEFAULT_REPORT_PATH = Path("reports/gold_set_sampler_audit.md")
@@ -90,21 +91,22 @@ def _per_leader(posts: pd.DataFrame, chosen: Sequence[str], cap: int) -> pd.Data
     return per_leader
 
 
-def _quotas(counts: pd.DataFrame, size: int) -> list[int]:
-    """The sampler's own quotas. It allocates over strata that have posts after the cap; empty strata get 0."""
-    available = {stratum: int(value) for stratum, value in counts["posts_after_cap"].items() if value > 0}
-    allocated = _allocate(available, size)
-    return [allocated.get(stratum, 0) for stratum in counts.index]
+def _quota_by_stratum(strata: pd.DataFrame) -> dict[tuple[str, str], int]:
+    """Targets from the sampler's own per-stratum table, keyed by (ceo_type, gender_as_coded)."""
+    return {(row.ceo_type, row.gender_as_coded): int(row.target) for row in strata.itertuples(index=False)}
 
 
-def audit_pool(posts: pd.DataFrame, settings: GoldSettings) -> pd.DataFrame:
+def audit_pool(posts: pd.DataFrame, settings: GoldSettings, reference: pd.DataFrame | None = None) -> pd.DataFrame:
     """Run the sampler on `posts` and count, per stratum, leaders, posts, the quota and what was drawn.
 
-    Every ceo_type x gender stratum that could exist from the labels present is listed, empty ones as zeros. The
-    sampler's own error (a capped pool smaller than the gold-set size) is not caught here.
+    Quotas are the sampler's targets: allocated from `reference` when given (the population the study covers), else
+    from `posts`. The audit always runs the sampler with raising switched off, so a stratum that falls short is a row
+    with `unfilled` above zero (the sampler's shortfall) instead of an error; the real settings still raise. Every
+    ceo_type x gender stratum that could exist from the labels present is listed, empty ones as zeros. The sampler's
+    other error (a capped pool smaller than the gold-set size) is not caught here.
     """
-    chosen = sample_gold_set(posts, settings)
-    per_leader = _per_leader(posts, chosen, settings.max_posts_per_leader)
+    draw = sample_gold_set(posts, replace(settings, raise_on_shortfall=False), reference=reference)
+    per_leader = _per_leader(posts, draw.post_ids, settings.max_posts_per_leader)
     counts = per_leader.groupby(STRATUM_KEYS).agg(
         leaders=("posts", "size"),
         leaders_used=("used", "sum"),
@@ -112,24 +114,29 @@ def audit_pool(posts: pd.DataFrame, settings: GoldSettings) -> pd.DataFrame:
         posts_after_cap=("posts_after_cap", "sum"),
         drawn=("drawn", "sum"),
     )
-    full_index = pd.MultiIndex.from_product(
-        [sorted(per_leader["ceo_type"].unique()), sorted(per_leader["gender_as_coded"].unique())], names=STRATUM_KEYS
-    )
-    counts = counts.reindex(full_index, fill_value=0)
-    counts["quota"] = _quotas(counts, settings.size)
+    ceo_types = sorted(set(per_leader["ceo_type"]) | set(draw.strata["ceo_type"]))
+    genders = sorted(set(per_leader["gender_as_coded"]) | set(draw.strata["gender_as_coded"]))
+    counts = counts.reindex(pd.MultiIndex.from_product([ceo_types, genders], names=STRATUM_KEYS), fill_value=0)
+    quota = _quota_by_stratum(draw.strata)
+    counts["quota"] = [quota.get(stratum, 0) for stratum in counts.index]
     counts["unfilled"] = counts["quota"] - counts["drawn"]
     typed = counts.reset_index().loc[:, list(AUDIT_COLUMNS)]
     return typed.astype({column: int for column in COUNT_COLUMNS})
 
 
 def empty_strata(audit: pd.DataFrame) -> int:
-    """Strata with no posts left to draw from. The sampler drops them silently, so `unfilled` shows 0 for them."""
+    """Strata with no posts left to draw from. Given a reference, such a stratum still has a quota and shows as unfilled."""
     return int((audit["posts_after_cap"] == 0).sum())
 
 
 def _pool(seed: int, minimum: int | None, leaders: int) -> pd.DataFrame:
     posts = synthetic_posts(seed, leaders)
     return posts if minimum is None else restrict_to_min_posts(posts, minimum)
+
+
+def _reference(seed: int, minimum: int | None, leaders: int) -> pd.DataFrame | None:
+    """The population the quotas are set from: everyone, when the pool is restricted; the pool itself otherwise."""
+    return None if minimum is None else synthetic_posts(seed, leaders)
 
 
 def summarise_seeds(
@@ -144,10 +151,12 @@ def summarise_seeds(
     cannot_draw = 0
     for seed in seeds:
         posts = _pool(seed, minimum, leaders)
-        if capped_pool_size(posts, settings.max_posts_per_leader) < settings.size:
+        reference = _reference(seed, minimum, leaders)
+        basis = posts if reference is None else reference
+        if capped_pool_size(basis, settings.max_posts_per_leader) < settings.size:
             cannot_draw += 1
             continue
-        audits.append(audit_pool(posts, settings).assign(seed=seed))
+        audits.append(audit_pool(posts, settings, reference=reference).assign(seed=seed))
     if not audits:
         return pd.DataFrame(columns=list(SUMMARY_COLUMNS)), cannot_draw
     stacked = pd.concat(audits, ignore_index=True)
@@ -179,18 +188,20 @@ def _markdown_table(frame: pd.DataFrame) -> str:
 
 def _single_seed_section(seed: int, settings: GoldSettings, minimum: int | None) -> str:
     posts = _pool(seed, minimum, LEADERS)
-    pool_size = capped_pool_size(posts, settings.max_posts_per_leader)
+    reference = _reference(seed, minimum, LEADERS)
+    pool_size = capped_pool_size(posts if reference is None else reference, settings.max_posts_per_leader)
     if pool_size < settings.size:
         return (
             f"Seed {seed}: the sampler cannot draw. {pool_size} posts remain after the cap of "
             f"{settings.max_posts_per_leader}; {settings.size} are needed.\n"
         )
-    audit = audit_pool(posts, settings)
+    audit = audit_pool(posts, settings, reference=reference)
     cannot_fill = int((audit["unfilled"] > 0).sum())
     nothing_to_draw = empty_strata(audit)
+    short_posts = int(audit['unfilled'].sum())
     return (
         f"Seed {seed}: {posts['leader_id'].nunique()} leaders in the pool, {len(posts)} posts, {pool_size} after the "
-        f"cap. Strata that cannot be filled (quota above what was drawn): {cannot_fill} of {len(audit)}. Strata with no posts in the pool (nothing to draw): {nothing_to_draw} of {len(audit)}.\n\n{_markdown_table(audit)}\n"
+        f"cap. Strata with a shortfall (quota above what was drawn): {cannot_fill} of {len(audit)}, {short_posts} posts short in all. Strata with no posts in the pool (nothing to draw): {nothing_to_draw} of {len(audit)}.\n\n{_markdown_table(audit)}\n"
     )
 
 
@@ -230,12 +241,21 @@ def render_report(settings: GoldSettings, min_posts: int) -> str:
         "- leaders / posts: in the pool before the cap. posts_after_cap: each leader counted at most the cap.\n"
         "- quota: the stratum's share of the gold-set size, proportional to posts_after_cap (largest remainder).\n"
         "- drawn: posts the sampler actually picked. leaders_used: leaders with at least one drawn post.\n"
-        "- unfilled: quota minus drawn. A stratum that cannot be filled has unfilled above zero.\n- seeds_empty: seeds on which the stratum has no posts in the pool. The sampler gives such a stratum no quota and does not report it, so it shows unfilled 0; read it together with seeds_empty.\n\n"
+        "- unfilled: the sampler's shortfall, quota minus drawn. A stratum that falls short has unfilled above zero.\n"
+        "- seeds_empty: seeds on which the stratum has no posts in the pool.\n\n"
+        "## Shortfalls\n\n"
+        "The sampler returns a per-stratum table of target, drawn and shortfall with the post_ids. With "
+        "`gold_set_raise_on_shortfall: true` (the default in configs/thresholds.yaml) it raises an error if any stratum "
+        "with a non-zero target draws fewer posts than its target. This audit runs it with that flag off, so a "
+        "shortfall is a row below instead of a stop. A stratum with no posts in the pool can only have a non-zero "
+        "target if the targets are set from a larger population, so Option B sets its quotas from all leaders "
+        "(the Option A pool) and draws only from leaders at the minimum. Option A sets its quotas from its own pool, "
+        "so an empty stratum there has no target and is shown only by seeds_empty.\n\n"
         f"{option_a}\n{option_b}\n"
         "## What this does and does not show\n\n"
         "The counts describe the sampler on invented tables. They say nothing about the real leaders, and the shape "
         "assumptions above change them. Which pool to draw from is an open question for the team and the mentors "
-        "(see docs/decisions.md, a proposal, not a decision). The sampler was not changed.\n"
+        "(see docs/decisions.md, a proposal, not a decision). The sampler was changed only to report shortfalls; its draw is the same.\n"
     )
 
 

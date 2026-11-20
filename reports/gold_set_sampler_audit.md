@@ -14,14 +14,18 @@ Command: `make gold-set-audit` (`python -m src.gold_set_audit`). Settings come f
 - leaders / posts: in the pool before the cap. posts_after_cap: each leader counted at most the cap.
 - quota: the stratum's share of the gold-set size, proportional to posts_after_cap (largest remainder).
 - drawn: posts the sampler actually picked. leaders_used: leaders with at least one drawn post.
-- unfilled: quota minus drawn. A stratum that cannot be filled has unfilled above zero.
-- seeds_empty: seeds on which the stratum has no posts in the pool. The sampler gives such a stratum no quota and does not report it, so it shows unfilled 0; read it together with seeds_empty.
+- unfilled: the sampler's shortfall, quota minus drawn. A stratum that falls short has unfilled above zero.
+- seeds_empty: seeds on which the stratum has no posts in the pool.
+
+## Shortfalls
+
+The sampler returns a per-stratum table of target, drawn and shortfall with the post_ids. With `gold_set_raise_on_shortfall: true` (the default in configs/thresholds.yaml) it raises an error if any stratum with a non-zero target draws fewer posts than its target. This audit runs it with that flag off, so a shortfall is a row below instead of a stop. A stratum with no posts in the pool can only have a non-zero target if the targets are set from a larger population, so Option B sets its quotas from all leaders (the Option A pool) and draws only from leaders at the minimum. Option A sets its quotas from its own pool, so an empty stratum there has no target and is shown only by seeds_empty.
 
 ## Option A: draw from all leaders with posts
 
 ### One table (seed 0)
 
-Seed 0: 560 leaders in the pool, 6057 posts, 1569 after the cap. Strata that cannot be filled (quota above what was drawn): 0 of 4. Strata with no posts in the pool (nothing to draw): 0 of 4.
+Seed 0: 560 leaders in the pool, 6057 posts, 1569 after the cap. Strata with a shortfall (quota above what was drawn): 0 of 4, 0 posts short in all. Strata with no posts in the pool (nothing to draw): 0 of 4.
 
 | ceo_type | gender_as_coded | leaders | leaders_used | posts | posts_after_cap | quota | drawn | unfilled |
 |---|---|---|---|---|---|---|---|---|
@@ -45,14 +49,14 @@ Seeds on which the sampler could draw 300 posts: 20 of 20. Seeds on which it ref
 
 ### One table (seed 0)
 
-Seed 0: 107 leaders in the pool, 3441 posts, 321 after the cap. Strata that cannot be filled (quota above what was drawn): 0 of 4. Strata with no posts in the pool (nothing to draw): 1 of 4.
+Seed 0: 107 leaders in the pool, 3441 posts, 1569 after the cap. Strata with a shortfall (quota above what was drawn): 1 of 4, 4 posts short in all. Strata with no posts in the pool (nothing to draw): 1 of 4.
 
 | ceo_type | gender_as_coded | leaders | leaders_used | posts | posts_after_cap | quota | drawn | unfilled |
 |---|---|---|---|---|---|---|---|---|
-| Founder-CEO | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
-| Founder-CEO | 1 | 19 | 19 | 600 | 57 | 53 | 53 | 0 |
+| Founder-CEO | 0 | 0 | 0 | 0 | 0 | 4 | 0 | 4 |
+| Founder-CEO | 1 | 19 | 19 | 600 | 57 | 43 | 43 | 0 |
 | Professional CEO | 0 | 6 | 6 | 135 | 18 | 17 | 17 | 0 |
-| Professional CEO | 1 | 82 | 82 | 2706 | 246 | 230 | 230 | 0 |
+| Professional CEO | 1 | 82 | 82 | 2706 | 246 | 236 | 236 | 0 |
 
 ### Across 20 seeds
 
@@ -60,11 +64,11 @@ Seeds on which the sampler could draw 300 posts: 20 of 20. Seeds on which it ref
 
 | ceo_type | gender_as_coded | leaders_median | leaders_used_median | posts_after_cap_median | quota_median | drawn_min | drawn_median | drawn_max | seeds_unfilled | seeds_empty |
 |---|---|---|---|---|---|---|---|---|---|---|
-| Founder-CEO | 0 | 1 | 1 | 3 | 3 | 0 | 3 | 7 | 0 | 4 |
-| Founder-CEO | 1 | 16.5 | 16.5 | 49.5 | 40.5 | 26 | 40.5 | 55 | 0 | 0 |
-| Professional CEO | 0 | 7 | 6 | 21 | 16.5 | 8 | 16.5 | 27 | 0 | 0 |
-| Professional CEO | 1 | 101.5 | 95 | 304.5 | 239.5 | 216 | 239.5 | 252 | 0 | 0 |
+| Founder-CEO | 0 | 1 | 1 | 3 | 3 | 0 | 3 | 5 | 5 | 4 |
+| Founder-CEO | 1 | 16.5 | 16 | 49.5 | 42.5 | 36 | 42 | 43 | 4 | 0 |
+| Professional CEO | 0 | 7 | 6 | 21 | 18 | 9 | 17 | 20 | 7 | 0 |
+| Professional CEO | 1 | 101.5 | 95 | 304.5 | 236.5 | 236 | 236.5 | 240 | 0 | 0 |
 
 ## What this does and does not show
 
-The counts describe the sampler on invented tables. They say nothing about the real leaders, and the shape assumptions above change them. Which pool to draw from is an open question for the team and the mentors (see docs/decisions.md, a proposal, not a decision). The sampler was not changed.
+The counts describe the sampler on invented tables. They say nothing about the real leaders, and the shape assumptions above change them. Which pool to draw from is an open question for the team and the mentors (see docs/decisions.md, a proposal, not a decision). The sampler was changed only to report shortfalls; its draw is the same.

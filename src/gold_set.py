@@ -11,6 +11,12 @@ Method:
      integers, ties broken by stratum label), and take the first n posts of that stratum in the shuffled order.
 A leader whose rows fall in more than one stratum is refused, because the cap could then not be kept.
 
+Targets come from the pool itself, or, when a `reference` table is given, from that table (the population the study
+covers). With a reference an empty or thin stratum in the pool keeps a non-zero target and shows up as a shortfall;
+without one a stratum that is absent from the pool has no target at all and could never be reported. The result carries
+a per-stratum table of target, drawn and shortfall. If `raise_on_shortfall` is true (the default in the thresholds file)
+a stratum with a non-zero target that draws fewer posts than its target raises an error naming strata and counts only.
+
 Coder assignment: every post goes to `coders_per_post` different coders. The coder groups (all pairs when it is two)
 are rotated in an order that keeps every prefix of the rotation balanced, so each coder gets about the same number of
 posts and each group about the same number of posts (never more than one apart).
@@ -36,6 +42,8 @@ REQUIRED_COLUMNS = ("post_id", "ceo_type", "gender_as_coded", "leader_id")
 MISSING_LABEL = "(missing)"
 MIN_CODERS_PER_POST = 2
 
+STRATA_COLUMNS = ("ceo_type", "gender_as_coded", "target", "drawn", "shortfall")
+
 Stratum = tuple[str, str]
 
 
@@ -48,6 +56,15 @@ class GoldSettings:
     seed: int
     coders: int
     coders_per_post: int
+    raise_on_shortfall: bool = True
+
+
+@dataclass(frozen=True, eq=False)
+class GoldDraw:
+    """The gold-set post_ids (sorted) and, per stratum, the target, what was drawn and the shortfall."""
+
+    post_ids: tuple[str, ...]
+    strata: pd.DataFrame
 
 
 @dataclass(frozen=True)
@@ -66,9 +83,18 @@ def load_gold_settings(path: Path = DEFAULT_THRESHOLDS_PATH) -> GoldSettings:
         seed=int(load_threshold("gold_set_seed", path)),
         coders=int(load_threshold("gold_set_coders", path)),
         coders_per_post=int(load_threshold("gold_set_coders_per_post", path)),
+        raise_on_shortfall=_load_flag("gold_set_raise_on_shortfall", path),
     )
     _validate_settings(settings, path)
     return settings
+
+
+def _load_flag(key: str, path: Path) -> bool:
+    """A true/false setting; anything else (a string such as "yes", a number) is refused rather than coerced."""
+    value = load_threshold(key, path)
+    if not isinstance(value, bool):
+        raise ValueError(f"{path}: {key} must be true or false")
+    return value
 
 
 def _validate_settings(settings: GoldSettings, path: Path) -> None:
@@ -145,23 +171,62 @@ def _allocate(available: dict[Stratum, int], size: int) -> dict[Stratum, int]:
     return {stratum: quota + (1 if stratum in by_remainder[:leftover] else 0) for stratum, quota in quotas.items()}
 
 
-def sample_gold_set(posts: pd.DataFrame, settings: GoldSettings) -> tuple[str, ...]:
-    """The gold-set post_ids, sorted: stratified, capped per leader, and the same every time for the same seed."""
-    eligible = _capped_shuffle(_prepare(posts), settings)
-    if len(eligible) < settings.size:
+def _groups(rows: pd.DataFrame) -> dict[Stratum, pd.DataFrame]:
+    return {
+        (str(ceo), str(gender)): group for (ceo, gender), group in rows.groupby(["ceo_label", "gender_label"], sort=True)
+    }
+
+
+def _strata_table(targets: dict[Stratum, int], drawn: dict[Stratum, int]) -> pd.DataFrame:
+    rows = [
+        (ceo, gender, targets.get((ceo, gender), 0), drawn.get((ceo, gender), 0))
+        for ceo, gender in sorted(set(targets) | set(drawn))
+    ]
+    table = pd.DataFrame(rows, columns=["ceo_type", "gender_as_coded", "target", "drawn"])
+    table["shortfall"] = (table["target"] - table["drawn"]).clip(lower=0)
+    return table.loc[:, list(STRATA_COLUMNS)].astype({"target": int, "drawn": int, "shortfall": int})
+
+
+def _raise_on_shortfall(strata: pd.DataFrame) -> None:
+    """Refuse a draw in which a stratum with a non-zero target came up short; strata and counts only, no ids."""
+    short = strata[(strata["target"] > 0) & (strata["drawn"] < strata["target"])]
+    if short.empty:
+        return
+    detail = "; ".join(
+        f"{row.ceo_type} x {row.gender_as_coded}: target {row.target}, drawn {row.drawn}"
+        for row in short.itertuples(index=False)
+    )
+    raise ValueError(
+        f"shortfall in {len(short)} stratum/strata, so the gold set cannot be the planned size ({detail}); "
+        "set gold_set_raise_on_shortfall to false only to look at the table"
+    )
+
+
+def sample_gold_set(posts: pd.DataFrame, settings: GoldSettings, reference: pd.DataFrame | None = None) -> GoldDraw:
+    """The gold-set post_ids, sorted, with a per-stratum table of target, drawn and shortfall.
+
+    Stratified, capped per leader, and the same every time for the same seed. Targets are allocated from `reference`
+    (same columns as `posts`) when it is given, otherwise from `posts`; the draw always comes from `posts`.
+    """
+    pool = _capped_shuffle(_prepare(posts), settings)
+    basis = pool if reference is None else _capped_shuffle(_prepare(reference), settings)
+    if len(basis) < settings.size:
         raise ValueError(
-            f"only {len(eligible)} posts remain after the per-leader cap of {settings.max_posts_per_leader}; "
+            f"only {len(basis)} posts remain after the per-leader cap of {settings.max_posts_per_leader}; "
             f"{settings.size} are needed"
         )
-    groups: dict[Stratum, pd.DataFrame] = {
-        (str(ceo), str(gender)): rows
-        for (ceo, gender), rows in eligible.groupby(["ceo_label", "gender_label"], sort=True)
-    }
-    quotas = _allocate({stratum: len(rows) for stratum, rows in groups.items()}, settings.size)
+    targets = _allocate({stratum: len(rows) for stratum, rows in _groups(basis).items()}, settings.size)
+    groups = _groups(pool)
     chosen: list[str] = []
+    drawn: dict[Stratum, int] = {}
     for stratum, rows in groups.items():
-        chosen.extend(rows["post_id"].head(quotas[stratum]))
-    return tuple(sorted(chosen))
+        picked = list(rows["post_id"].head(targets.get(stratum, 0)))
+        chosen.extend(picked)
+        drawn[stratum] = len(picked)
+    strata = _strata_table(targets, drawn)
+    if settings.raise_on_shortfall:
+        _raise_on_shortfall(strata)
+    return GoldDraw(post_ids=tuple(sorted(chosen)), strata=strata)
 
 
 def stratum_report(posts: pd.DataFrame, chosen: Sequence[str]) -> pd.DataFrame:

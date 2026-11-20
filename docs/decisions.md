@@ -230,3 +230,11 @@ The Hinglish precision file (25 rows, `human_right` still blank) was drawn from 
 - **Meeting planned.** A meeting with the data owners is planned for 2026-11-23 about specific columns.
 - **Open, all human decisions:** (1) which outcome measure; (2) which year window; (3) whether and how to adjust for sector.
 - **What was done in this step.** Only a counts-only check of what Company_Data can support (`reports/outcome_feasibility.md`). No new data, no network, no gate work, and no sign-off line.
+
+## 2026-11-21: the gold-set sampler now reports shortfalls and raises on them (step 11, part 4)
+
+- **What changed.** `sample_gold_set` was treated as read-only after step 10; it is changed here on the user's instruction, as a small fix. It now returns the sorted post_ids together with a per-stratum table of target, drawn and shortfall. If any stratum with a non-zero target draws fewer posts than its target it raises an error that names strata and counts (no ids), unless `gold_set_raise_on_shortfall` in `configs/thresholds.yaml` is `false`. The default is `true`.
+- **How an empty stratum gets a target.** An optional `reference` table (the population the study covers) sets the targets; the draw still comes from the pool. Without a reference, targets come from the pool, so a stratum with no posts at all has no target and cannot fall short. This is a design choice of mine, flagged for the team: the user's rule cannot fire on an empty stratum unless the target comes from somewhere other than the pool.
+- **Draw unchanged.** With no reference the sampler picks the same posts as before for the same seed.
+- **What the synthetic audit shows (counts only, `reports/gold_set_sampler_audit.md`).** Under Option B (leaders with at least the minimum posts, quotas set from all leaders) the Founder-CEO by gender "0" stratum is empty or short on some synthetic seeds, so the sampler would raise there. Under Option A no stratum is short. These are invented tables and say nothing about the real leaders. Which pool to use is still open and still a human decision.
+- **Not done.** The sampler was not run on real data. No gate was signed off.

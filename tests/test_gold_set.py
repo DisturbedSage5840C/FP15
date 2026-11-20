@@ -62,7 +62,7 @@ def _by_leader(posts: pd.DataFrame, chosen: tuple[str, ...]) -> Counter:
 def test_the_sample_has_exactly_the_requested_size_with_unique_ids_from_the_table() -> None:
     posts = _even_table()
 
-    chosen = sample_gold_set(posts, BASE)
+    chosen = sample_gold_set(posts, BASE).post_ids
 
     assert len(chosen) == BASE.size
     assert len(set(chosen)) == BASE.size
@@ -72,20 +72,20 @@ def test_the_sample_has_exactly_the_requested_size_with_unique_ids_from_the_tabl
 def test_the_same_seed_gives_the_same_sample_twice() -> None:
     posts = _even_table()
 
-    assert sample_gold_set(posts, BASE) == sample_gold_set(posts, BASE)
+    assert sample_gold_set(posts, BASE).post_ids == sample_gold_set(posts, BASE).post_ids
 
 
 def test_a_different_seed_gives_a_different_sample() -> None:
     posts = _even_table()
 
-    assert sample_gold_set(posts, BASE) != sample_gold_set(posts, replace(BASE, seed=BASE.seed + 1))
+    assert sample_gold_set(posts, BASE).post_ids != sample_gold_set(posts, replace(BASE, seed=BASE.seed + 1)).post_ids
 
 
 def test_the_row_order_of_the_input_does_not_change_the_sample() -> None:
     posts = _even_table()
     shuffled = posts.sample(frac=1.0, random_state=3).reset_index(drop=True)
 
-    assert sample_gold_set(posts, BASE) == sample_gold_set(shuffled, BASE)
+    assert sample_gold_set(posts, BASE).post_ids == sample_gold_set(shuffled, BASE).post_ids
 
 
 def test_no_leader_is_above_the_cap_even_when_one_leader_has_most_of_the_posts() -> None:
@@ -93,7 +93,7 @@ def test_no_leader_is_above_the_cap_even_when_one_leader_has_most_of_the_posts()
     posts["post_id"] = [f"p{i:05d}" for i in range(len(posts))]
     settings = replace(BASE, max_posts_per_leader=2)
 
-    chosen = sample_gold_set(posts, settings)
+    chosen = sample_gold_set(posts, settings).post_ids
 
     assert max(_by_leader(posts, chosen).values()) <= 2
 
@@ -102,7 +102,7 @@ def test_a_leader_with_fewer_posts_than_the_cap_can_still_be_drawn_in_full() -> 
     posts = _posts([("A", FOUNDER, 1, 1), ("B", FOUNDER, 1, 1), ("C", PROFESSIONAL, 0, 1)])
     settings = replace(BASE, size=3, max_posts_per_leader=5)
 
-    assert sorted(sample_gold_set(posts, settings)) == sorted(posts["post_id"])
+    assert sorted(sample_gold_set(posts, settings).post_ids) == sorted(posts["post_id"])
 
 
 # ---- sampler: strata --------------------------------------------------------------------------------------------
@@ -111,7 +111,7 @@ def test_a_leader_with_fewer_posts_than_the_cap_can_still_be_drawn_in_full() -> 
 def test_equal_strata_each_get_an_equal_share() -> None:
     posts = _even_table()
 
-    report = stratum_report(posts, sample_gold_set(posts, BASE))
+    report = stratum_report(posts, sample_gold_set(posts, BASE).post_ids)
 
     assert report["drawn"].tolist() == [10, 10, 10, 10]
 
@@ -128,7 +128,7 @@ def test_unequal_strata_get_a_share_within_one_post_of_proportional() -> None:
     pool = {"F1": 36, "F0": 18, "P1": 27, "P0": 9}  # min(4 posts, cap 3) per leader
     total = sum(pool.values())
 
-    report = stratum_report(posts, sample_gold_set(posts, settings))
+    report = stratum_report(posts, sample_gold_set(posts, settings).post_ids)
 
     for row in report.itertuples():
         key = ("F" if row.ceo_type == FOUNDER else "P") + str(row.gender_as_coded)
@@ -140,7 +140,7 @@ def test_a_tiny_stratum_that_draws_nothing_still_appears_in_the_report_with_zero
     posts = _posts(specs)
     settings = replace(BASE, size=20, max_posts_per_leader=3)
 
-    report = stratum_report(posts, sample_gold_set(posts, settings))
+    report = stratum_report(posts, sample_gold_set(posts, settings).post_ids)
 
     tiny = report[(report["ceo_type"] == PROFESSIONAL) & (report["gender_as_coded"] == "0")]
     assert tiny["available"].tolist() == [1]
@@ -152,7 +152,7 @@ def test_missing_values_form_their_own_stratum_and_are_never_filled_in() -> None
     posts = _posts(specs)
     before = posts.copy(deep=True)
 
-    report = stratum_report(posts, sample_gold_set(posts, replace(BASE, size=20)))
+    report = stratum_report(posts, sample_gold_set(posts, replace(BASE, size=20)).post_ids)
 
     assert "(missing)" in report["gender_as_coded"].tolist()
     assert report["drawn"].sum() == 20
@@ -163,7 +163,7 @@ def test_gender_is_used_as_coded_so_a_value_outside_one_and_zero_is_its_own_stra
     specs = [(f"A{i}", FOUNDER, 1, 3) for i in range(5)] + [(f"B{i}", FOUNDER, 2, 3) for i in range(5)]
     posts = _posts(specs)
 
-    report = stratum_report(posts, sample_gold_set(posts, replace(BASE, size=10)))
+    report = stratum_report(posts, sample_gold_set(posts, replace(BASE, size=10)).post_ids)
 
     assert sorted(report["gender_as_coded"].tolist()) == ["1", "2"]
 
@@ -209,6 +209,145 @@ def test_a_leader_whose_rows_sit_in_two_strata_is_refused_because_the_cap_would_
 
     with pytest.raises(ValueError, match="1 leader appears in more than one"):
         sample_gold_set(posts, BASE)
+
+
+# ---- sampler: a stratum that cannot be filled is a loud result --------------------------------------------------
+
+STRATA_COLUMNS = ["ceo_type", "gender_as_coded", "target", "drawn", "shortfall"]
+LENIENT = replace(BASE, raise_on_shortfall=False)
+
+
+def _without_stratum(posts: pd.DataFrame, ceo_type: str, gender: int) -> pd.DataFrame:
+    gone = (posts["ceo_type"] == ceo_type) & (posts["gender_as_coded"] == gender)
+    return posts[~gone].reset_index(drop=True)
+
+
+def _row(strata: pd.DataFrame, ceo_type: str, gender: str) -> pd.Series:
+    match = strata[(strata["ceo_type"] == ceo_type) & (strata["gender_as_coded"] == gender)]
+    assert len(match) == 1
+    return match.iloc[0]
+
+
+def test_the_draw_carries_the_post_ids_and_a_per_stratum_table_of_target_drawn_and_shortfall() -> None:
+    posts = _even_table()
+
+    draw = sample_gold_set(posts, BASE)
+
+    assert len(draw.post_ids) == BASE.size
+    assert list(draw.strata.columns) == STRATA_COLUMNS
+    assert len(draw.strata) == 4
+    assert draw.strata["target"].sum() == BASE.size
+    assert draw.strata["drawn"].sum() == BASE.size
+    assert (draw.strata["shortfall"] == 0).all()
+
+
+def test_an_empty_stratum_raises_when_the_reference_population_has_posts_for_it() -> None:
+    reference = _even_table()
+    pool = _without_stratum(reference, FOUNDER, 0)
+
+    with pytest.raises(ValueError, match="shortfall") as raised:
+        sample_gold_set(pool, BASE, reference=reference)
+    assert FOUNDER in str(raised.value)
+
+
+def test_an_empty_stratum_is_a_row_with_the_whole_target_as_shortfall_when_raising_is_switched_off() -> None:
+    reference = _even_table()
+    pool = _without_stratum(reference, FOUNDER, 0)
+
+    draw = sample_gold_set(pool, LENIENT, reference=reference)
+
+    empty = _row(draw.strata, FOUNDER, "0")
+    assert (empty["target"], empty["drawn"], empty["shortfall"]) == (10, 0, 10)
+    assert len(draw.post_ids) == BASE.size - 10
+
+
+def test_an_underfilled_stratum_raises_and_reports_how_many_posts_it_is_short() -> None:
+    reference = _even_table()
+    thin = _posts([("T1", FOUNDER, 0, 2)])
+    pool = pd.concat([_without_stratum(reference, FOUNDER, 0), thin.assign(post_id=lambda frame: "t" + frame["post_id"])])
+
+    with pytest.raises(ValueError, match="shortfall"):
+        sample_gold_set(pool, BASE, reference=reference)
+    draw = sample_gold_set(pool, LENIENT, reference=reference)
+
+    short = _row(draw.strata, FOUNDER, "0")
+    assert (short["target"], short["drawn"], short["shortfall"]) == (10, 2, 8)
+    assert (draw.strata.drop(index=short.name)["shortfall"] == 0).all()
+
+
+def test_a_stratum_whose_target_is_zero_never_raises_even_with_nothing_drawn() -> None:
+    reference = _posts([("A", FOUNDER, 1, 3)] * 1 + [(f"B{i}", PROFESSIONAL, 1, 3) for i in range(200)])
+    pool = reference[reference["ceo_type"] == PROFESSIONAL].reset_index(drop=True)
+
+    draw = sample_gold_set(pool, BASE, reference=reference)
+
+    tiny = _row(draw.strata, FOUNDER, "1")
+    assert (tiny["target"], tiny["drawn"], tiny["shortfall"]) == (0, 0, 0)
+
+
+def test_the_shortfall_error_names_strata_and_counts_but_no_post_or_leader_ids() -> None:
+    reference = _even_table()
+    pool = _without_stratum(reference, FOUNDER, 0)
+
+    with pytest.raises(ValueError, match="shortfall") as raised:
+        sample_gold_set(pool, BASE, reference=reference)
+
+    message = str(raised.value)
+    assert "target 10" in message and "drawn 0" in message
+    assert not any(post_id in message for post_id in reference["post_id"])
+    assert not any(f"L{index}" in message for index in range(4))
+
+
+def test_the_reference_table_is_not_modified_and_the_draw_is_the_same_every_time() -> None:
+    reference = _even_table()
+    before = reference.copy()
+    pool = _without_stratum(reference, FOUNDER, 0)
+
+    first = sample_gold_set(pool, LENIENT, reference=reference)
+    second = sample_gold_set(pool, LENIENT, reference=reference)
+
+    pd.testing.assert_frame_equal(reference, before)
+    assert first.post_ids == second.post_ids
+    pd.testing.assert_frame_equal(first.strata, second.strata)
+
+
+def test_without_a_reference_the_targets_come_from_the_pool_itself_so_an_absent_stratum_is_not_listed() -> None:
+    pool = _without_stratum(_even_table(), FOUNDER, 0)
+
+    draw = sample_gold_set(pool, BASE)
+
+    assert len(draw.strata) == 3
+    assert (draw.strata["shortfall"] == 0).all()
+
+
+# ---- sampler: the shortfall flag in the thresholds file -----------------------------------------------------------
+
+
+def test_the_flag_defaults_to_raising_in_the_real_thresholds_file() -> None:
+    settings = load_gold_settings(REPO_ROOT / "configs" / "thresholds.yaml")
+
+    assert settings.raise_on_shortfall is True
+
+
+def test_the_flag_can_be_switched_off_in_the_thresholds_file(tmp_path: Path) -> None:
+    settings = load_gold_settings(_config(tmp_path, gold_set_raise_on_shortfall=False))
+
+    assert settings.raise_on_shortfall is False
+
+
+def test_a_flag_that_is_not_true_or_false_is_refused(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="gold_set_raise_on_shortfall"):
+        load_gold_settings(_config(tmp_path, gold_set_raise_on_shortfall="yes"))
+
+
+def test_a_missing_flag_is_named(tmp_path: Path) -> None:
+    path = _config(tmp_path)
+    values = yaml.safe_load(path.read_text(encoding="utf-8"))
+    del values["gold_set_raise_on_shortfall"]
+    path.write_text(yaml.safe_dump(values), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="missing key gold_set_raise_on_shortfall"):
+        load_gold_settings(path)
 
 
 # ---- coder assignment -------------------------------------------------------------------------------------------
@@ -288,6 +427,7 @@ def _config(tmp_path: Path, **overrides: object) -> Path:
         "gold_set_seed": 7,
         "gold_set_coders": 4,
         "gold_set_coders_per_post": 2,
+        "gold_set_raise_on_shortfall": True,
     }
     values.update(overrides)
     path = tmp_path / "thresholds.yaml"

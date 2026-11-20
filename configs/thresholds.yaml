@@ -47,6 +47,9 @@ gold_set_max_posts_per_leader: 3
 gold_set_seed: 20261120
 gold_set_coders: 4
 gold_set_coders_per_post: 2
+# A stratum with a non-zero target that draws fewer posts than its target is an error (true) or a row with a
+# shortfall in the returned table (false). Keep true: an empty or thin cell must never pass silently.
+gold_set_raise_on_shortfall: true
 
 # Step 5 (scraping and expansion). A HUMAN switch, like reaction_check_confirmed. Keep false until the course mentors approve
 # in writing. While false, tests/test_no_network.py fails if any pipeline code imports a network library or opens a

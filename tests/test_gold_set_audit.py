@@ -205,3 +205,43 @@ def test_report_states_how_many_strata_have_nothing_to_draw() -> None:
     report = render_report(SETTINGS, MIN_POSTS)
 
     assert "no posts in the pool" in report
+
+
+def _without_small_cell(posts: pd.DataFrame) -> pd.DataFrame:
+    return posts[~((posts["ceo_type"] == "Founder-CEO") & (posts["gender_as_coded"] == 0))]
+
+
+def test_audit_against_a_reference_shows_the_empty_stratum_with_its_whole_target_unfilled() -> None:
+    reference = synthetic_posts(0)
+
+    audit = audit_pool(_without_small_cell(reference), SETTINGS, reference=reference)
+
+    empty = audit[(audit["ceo_type"] == "Founder-CEO") & (audit["gender_as_coded"] == "0")].iloc[0]
+    assert empty["quota"] > 0
+    assert (empty["drawn"], empty["unfilled"]) == (0, empty["quota"])
+    assert empty_strata(audit) == 1
+
+
+def test_audit_does_not_raise_on_a_shortfall_even_when_the_settings_say_to_raise() -> None:
+    reference = synthetic_posts(0)
+    assert SETTINGS.raise_on_shortfall is True
+
+    audit = audit_pool(_without_small_cell(reference), SETTINGS, reference=reference)
+
+    assert audit["unfilled"].sum() > 0
+    assert audit["drawn"].sum() == SETTINGS.size - audit["unfilled"].sum()
+
+
+def test_seed_summary_for_a_restricted_pool_counts_the_seeds_on_which_a_stratum_fell_short() -> None:
+    summary, cannot_draw = summarise_seeds(AUDIT_SEEDS, SETTINGS, minimum=MIN_POSTS)
+
+    assert cannot_draw == 0
+    assert (summary["seeds_unfilled"] >= summary["seeds_empty"]).all()
+
+
+def test_report_shows_shortfalls_and_no_longer_says_the_sampler_is_unchanged_or_silent() -> None:
+    report = render_report(SETTINGS, MIN_POSTS)
+
+    assert "shortfall" in report
+    assert "The sampler was not changed" not in report
+    assert "does not report it" not in report
