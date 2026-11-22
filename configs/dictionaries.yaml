@@ -1,0 +1,21 @@
+# Slots for external word lists. NOTHING is downloaded or stored here: a human places each file under data/external/
+# (git-ignored) after checking its licence, then sets licence_checked to true. The code never creates a placeholder list.
+# The file names in `path` are a suggestion; change them to match the file that is actually placed.
+# These lists are for the dictionary layer only. What any category means is a human and mentor decision, not made here.
+dictionaries:
+  - name: Big Two Dictionaries
+    citation: >-
+      Pietraszkiewicz et al. (2019). The Big Two dictionaries: Capturing agency and communion in natural language.
+      European Journal of Social Psychology, 49(5), 871-887.
+    doi: 10.1002/ejsp.2561
+    path: data/external/big_two_dictionaries.txt
+    licence_checked: false
+
+  # Cross-check only. Built from job advertisements, not from posts, so it is not a main measure.
+  - name: Gaucher, Friesen and Kay (2011) gendered wording
+    citation: >-
+      Gaucher, Friesen and Kay (2011). Evidence that gendered wording in job advertisements exists and sustains gender
+      inequality. Journal of Personality and Social Psychology, 101(1), 109-128.
+    doi: 10.1037/a0022530
+    path: data/external/gaucher_friesen_kay_2011.txt
+    licence_checked: false

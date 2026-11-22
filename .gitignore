@@ -5,6 +5,8 @@ data/raw/*
 !data/raw/MANIFEST.sha256
 !data/raw/.gitkeep
 data/interim/
+# external word lists are placed by hand after a licence check and are never committed
+data/external/
 data/derived/*.csv
 data/derived/*.html
 *.zip
