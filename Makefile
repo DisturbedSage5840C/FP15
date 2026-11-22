@@ -1,6 +1,6 @@
 PY ?= .venv/bin/python
 
-.PHONY: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report hinglish-check dedup-check dedup-characterise segmentation-score segmentation-viewer eda eda-variables gold-set-audit outcome-feasibility test test-stats all
+.PHONY: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report hinglish-check dedup-check dedup-characterise segmentation-score segmentation-viewer eda eda-variables gold-set-audit outcome-feasibility test test-stats dict-measures-test all
 check-key: ## fail with a clear message unless FP15_ID_KEY is set (environment or git-ignored .env); the value is never shown
 	$(PY) -m src.id_key
 verify:   ## check raw hash manifest (writes it on first run)
@@ -53,6 +53,8 @@ outcome-feasibility: ## which firm-outcome measures Company_Data can give (repor
 	$(PY) -m src.outcome_feasibility
 test:
 	$(PY) -m pytest -q
+dict-measures-test: ## tests for the dictionary-layer scoring code and its slot config; invented sentences only; no real data, no download; not part of make all
+	$(PY) -m pytest -q tests/test_dict_measures.py tests/test_dictionaries_config.py
 test-stats: ## tests for the statistics tools only (agreement, gold-set sampler, shrinkage and BH, and the thresholds loader they share); synthetic data only; not part of make all
 	$(PY) -m pytest -q tests/test_thresholds.py tests/test_agreement.py tests/test_gold_set.py tests/test_stats_tools.py
 all: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report eda eda-variables test
