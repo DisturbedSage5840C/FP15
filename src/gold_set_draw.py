@@ -9,7 +9,7 @@ sequence over ALL cleaned cells in a fixed order), so a drawn id means the same 
 cannot be drawn, but it keeps its place in the numbering.
 
 The text file holds post text, so it is written to git-ignored data/derived only. The tracked report holds counts: no
-ids, no names, no text. Strata use the leader labels of src/provisional_groups.py: ceo_type as coded in the posts and
+ids, no names, no text. Strata use the frozen leader labels of src/gold_set_groups.py: ceo_type as coded in the posts and
 gender exactly as coded in Company_Data (nothing inferred from names; a missing value is its own stratum).
 """
 from __future__ import annotations
@@ -22,16 +22,16 @@ from pathlib import Path
 
 import pandas as pd
 
+from src.eda import INTERIM_FILES, NEVER_LOADED
 from src.eda_balance import CEO_TYPE_FACTOR, GENDER_FACTOR
 from src.eda_common import DEFAULT_THRESHOLDS_PATH, load_eda_settings
 from src.gold_set import GoldDraw, GoldSettings, load_gold_settings, sample_gold_set, stratum_report
+from src.gold_set_groups import leader_groups
 from src.harmonise import DEFAULT_INTERIM_DIR
 from src.id_key import MissingIdKey
 from src.id_matching import leader_id_for
 from src.post_cleaning import DEFAULT_CLEAN_PATH
 from src.provisional_common import COMMENT_PREFIX, DEFAULT_DERIVED_DIR, DEFAULT_REPORT_DIR
-from src.provisional_compare import _read_tables
-from src.provisional_groups import leader_groups
 from src.provisional_measures import INPUT_COLUMNS, _post_id, _sorted_cells
 from src.verify_raw import DEFAULT_RAW_DIR, ManifestMismatch
 from src.verify_raw import run as verify_raw
@@ -40,6 +40,7 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_OUT_PATH = DEFAULT_DERIVED_DIR / "gold_set_300.csv"
 DEFAULT_REPORT_PATH = DEFAULT_REPORT_DIR / "gold_set_draw.md"
+LABEL_TABLES = ("posts", "proposal", "company")
 GOLD_COLUMNS = ("post_id", "leader_id", "post_text")
 POOL_COLUMNS = ("post_id", "leader_id", "ceo_type", "gender_as_coded", "post_text")
 GENDER_CODE_PREFIX = "coded "
@@ -159,6 +160,19 @@ def render_report(pool: pd.DataFrame, draw: GoldDraw, settings: GoldSettings, em
         "Post ids and post text are in the git-ignored data/derived file only.",
     ]
     return "\n".join(lines) + "\n"
+
+
+def _read_tables(interim_dir: Path) -> dict[str, pd.DataFrame]:
+    """The interim tables the frozen labels need, as strings, without post text, links or profile urls."""
+    return {
+        name: pd.read_csv(
+            interim_dir / INTERIM_FILES[name],
+            dtype=str,
+            keep_default_na=False,
+            usecols=lambda column: column not in NEVER_LOADED,
+        )
+        for name in LABEL_TABLES
+    }
 
 
 def _read_cells(clean_path: Path) -> pd.DataFrame:
