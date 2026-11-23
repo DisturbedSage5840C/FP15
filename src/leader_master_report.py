@@ -94,33 +94,39 @@ def render_report(
         "## Source overlap",
         "",
         *_table(
-            ("Source", "Leaders"),
+            ("Source", "Leaders", f"With at least {min_posts} raw post cells (15+)"),
             [
-                ("post sheets", _p(n_posts)),
-                ("roster", _p(n_roster)),
-                ("wordcount summaries", _p(n_summaries)),
-                ("Company_Data", _p(n_company)),
-                ("universe (union)", _fmt(n)),
+                ("post sheets", _p(n_posts), _p(int((has_posts & (raw_cells >= min_posts)).sum()))),
+                ("roster", _p(n_roster), _p(int((has_roster & (raw_cells >= min_posts)).sum()))),
+                ("wordcount summaries", _p(n_summaries), _p(int((has_summaries & (raw_cells >= min_posts)).sum()))),
+                ("Company_Data", _p(n_company), _p(int((has_company & (raw_cells >= min_posts)).sum()))),
+                ("universe (union)", _fmt(n), _p(at_15)),
             ],
         ),
         "",
         "## Leaders with posts versus without",
         "",
         *_table(
-            ("Group", "Leaders"),
+            ("Group", "Leaders", f"With at least {min_posts} raw post cells (15+)"),
             [
-                (f"with at least 1 raw post cell", _p(with_posts)),
-                (f"with at least {min_posts} raw post cells (post-analysis denominator)", _p(with_min)),
-                ("with no raw post cell", _p(without_posts)),
-                ("all", _fmt(n)),
+                ("with at least 1 raw post cell", _p(with_posts), _p(with_min)),
+                ("with no raw post cell", _p(without_posts), "0"),
+                ("all", _fmt(n), _p(at_15)),
             ],
         ),
         "",
         "## Match method (Company_Data matching ladder)",
         "",
         *_table(
-            ("Match method", "Leaders"),
-            [(m, _p(mm_counts[m])) for m in MATCH_ORDER],
+            ("Match method", "Leaders", f"With at least {min_posts} raw post cells (15+)"),
+            [
+                (
+                    m,
+                    _p(mm_counts[m]),
+                    _p(int(((mm == m) & (raw_cells >= min_posts)).sum())),
+                )
+                for m in MATCH_ORDER
+            ],
         ),
         "",
         f"- Leaders with Company_Data columns attached: {_p(has_company_data)}",
