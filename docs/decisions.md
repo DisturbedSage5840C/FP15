@@ -300,3 +300,16 @@ The project owner told Claude to do this count instead of waiting for a human co
 - **Flagged cells.** 60 of the 200 carry a short note in `human_note` (git-ignored). Kinds: link or title only with no author header, an embedded company post under the leader's header, a leader header with no own text followed by another person's embedded header, a leader comment on another person's post, minimal text only, and one activity line. Each was counted as 1 by convention. The owner should look at the ones noted as flags first.
 - **What this check cannot show.** Every one of the 200 cells was counted 1, and the segmenter also found 1 in all 200. The sample has no cell with more than one post, so the check tests only "no false splits" and cannot test "missed splits". Because the counting rule is the segmenter's own rule, agreement on single-post cells is partly by construction. The 200/200 says nothing about how well the segmenter splits cells that hold several posts. Whether the multi-post cells exist in the full data is not known from this sample. This is a finding for the owner, not something to fix here.
 - **Not done.** The segmenter was not changed. No gate was signed off. No network call, no scraping, no LLM call. No post text, name or link is in any tracked file or in chat.
+
+## 2026-11-23: gold-set pool rule, Option A, PROVISIONAL (step 16, part 2)
+
+The project owner told Claude to draw the 300-post gold set now and will review it by hand. That overrides the "gold set stays closed" line in CLAUDE.md for this step only. This answers the 2026-11-20 open question about Option A or B.
+
+**Option A chosen, PROVISIONAL (AI-assisted, not a human sign-off), 2026-11-23, pending confirmation by the owner.**
+
+- **What Option A means.** The pool is every leader with at least one non-empty cleaned cell (563 leaders, 26,944 cells), with no minimum number of posts per leader. Option B (only leaders with at least `min_posts_per_leader`) is not used. Under A no stratum is empty, including Founder-CEO by gender coded 0 (52 cells available, target 1).
+- **How it was drawn.** `make gold-set-draw` runs the existing sampler in `src/gold_set.py` unchanged, with the settings in `configs/thresholds.yaml`: size 300, cap 3 posts per leader (still a proposal awaiting mentor approval), seed 20261120. Strata are ceo_type by gender as coded. No reference table, so a thin stratum is not padded.
+- **Result.** 300 posts drawn from 184 leaders (102 leaders with 1 post, 48 with 2, 34 with 3), no shortfall in any of the 13 strata. Counts are in `reports/gold_set_draw.md`.
+- **Ids.** Post ids are the same `post_id` values the provisional measures use, so a drawn id points at the same cell in both files. The one empty cell cannot be drawn but keeps its place in the numbering. The ids and post text are in git-ignored `data/derived/gold_set_300.csv` only; no tracked file lists an id.
+- **Effect of choosing A.** Leaders with few posts can be in the gold set, and the main analysis uses only leaders with at least 15 posts, so some gold posts come from leaders the main analysis will not model. That is fine for checking a measure on posts, but the owner may prefer B.
+- **Open for the owner.** Confirm A or switch to B (one setting change and a re-draw, which would change which posts are in the set).
