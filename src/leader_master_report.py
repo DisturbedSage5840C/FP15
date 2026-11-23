@@ -5,7 +5,7 @@ the disclosure minimum.
 """
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 import pandas as pd
 
@@ -24,6 +24,8 @@ def render_report(
     frame: pd.DataFrame,
     excluded_ambiguous_keys: int,
     settings: EdaSettings,
+    post_counts: Mapping[str, int] | None = None,
+    old_post_leader_count: int | None = None,
 ) -> str:
     """Counts-only Markdown report for leader_master.md.
 
@@ -37,6 +39,7 @@ def render_report(
     min_posts = settings.min_posts
 
     n = len(frame)
+    old_post_counts = post_counts or {}
 
     # --- source overlap ---
     has_posts = frame["in_posts"].astype(bool)
@@ -54,6 +57,10 @@ def render_report(
     with_posts = int((raw_cells > 0).sum())
     without_posts = n - with_posts
     with_min = int((raw_cells >= min_posts).sum())
+    old_with_posts = old_post_leader_count if old_post_leader_count is not None else sum(
+        1 for cells in old_post_counts.values() if cells > 0
+    )
+    old_with_min = sum(1 for cells in old_post_counts.values() if cells >= min_posts)
 
     # --- match method counts ---
     mm = frame["match_method"]
@@ -89,7 +96,17 @@ def render_report(
         "Information in this report is relayed from `data/interim` files; it was not changed here.",
         "",
         f"- Universe size (all four sources): **{n:,}**",
-        f"- Keys excluded (shared inside one source, no id assigned): {_p(excluded_ambiguous_keys)}",
+        f"- Keys excluded due to internal source sharing: {_p(excluded_ambiguous_keys)}",
+        "",
+        "## Post-sheet base versus master",
+        "",
+        *_table(
+            ("Measure", "Old post-sheet base", "Master"),
+            [
+                ("leaders represented in post sheets", _p(old_with_posts), _p(n_posts)),
+                (f"leaders with at least {min_posts} raw post cells ({min_posts}+)", _p(old_with_min), _p(with_min)),
+            ],
+        ),
         "",
         "## Source overlap",
         "",

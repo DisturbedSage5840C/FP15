@@ -290,7 +290,7 @@ def test_shared_roster_or_summary_key_keeps_the_exact_post_company_leader_withou
     assert row["leader_id"] == fake_id(name_key("Olive Branch"))
     assert row["match_method"] == NAME_EXACT
     assert row["roster_key_shared"] and row["summary_key_shared"]
-    assert not row["in_roster"] and not row["in_summaries"]
+    assert row["in_roster"] and row["in_summaries"]
     assert row["raw_post_cells"] == 16
 
 
@@ -390,10 +390,11 @@ def test_report_is_counts_only_hides_small_cells_and_shows_the_fifteen_post_colu
         posts=posts,
     )
 
-    report = render_report(frame, excluded_ambiguous_keys=2, settings=SETTINGS)
+    report = render_report(frame, excluded_ambiguous_keys=0, settings=SETTINGS, post_counts=posts)
 
     assert "<5" in report
     assert "15+" in report
+    assert "Old post-sheet base" in report and "Master" in report
     assert "Lone Sheet" not in report and "Person Num" not in report
     assert "personality" not in report.lower()
     assert "relayed" in report.lower()

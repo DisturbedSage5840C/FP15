@@ -340,8 +340,8 @@ def build_master(
             for ordinal, (source, entity) in enumerate(physical, start=1):
                 flags = {
                     "in_posts": source == SOURCE_SHEETS,
-                    "in_roster": bool(per_source[SOURCE_ROSTER]) and not roster_shared,
-                    "in_summaries": bool(per_source[SOURCE_SUMMARIES]) and not summary_shared,
+                    "in_roster": bool(per_source[SOURCE_ROSTER]),
+                    "in_summaries": bool(per_source[SOURCE_SUMMARIES]),
                     "in_company": source == SOURCE_COMPANY,
                     "roster_key_shared": roster_shared,
                     "summary_key_shared": summary_shared,
@@ -360,12 +360,14 @@ def build_master(
                 per_source[SOURCE_SHEETS][0] if per_source[SOURCE_SHEETS]
                 else per_source[SOURCE_COMPANY][0] if per_source[SOURCE_COMPANY]
                 else per_source[SOURCE_ROSTER][0] if len(per_source[SOURCE_ROSTER]) == 1
-                else per_source[SOURCE_SUMMARIES][0]
+                else per_source[SOURCE_SUMMARIES][0] if len(per_source[SOURCE_SUMMARIES]) == 1
+                # Do not let a shared enrichment key supply a company match.
+                else Entity(source="shared_enrichment", ref="", key=key, company_key="")
             )
             flags = {
                 "in_posts": bool(per_source[SOURCE_SHEETS]),
-                "in_roster": bool(per_source[SOURCE_ROSTER]) and not roster_shared,
-                "in_summaries": bool(per_source[SOURCE_SUMMARIES]) and not summary_shared,
+                "in_roster": bool(per_source[SOURCE_ROSTER]),
+                "in_summaries": bool(per_source[SOURCE_SUMMARIES]),
                 "in_company": bool(per_source[SOURCE_COMPANY]),
                 "roster_key_shared": roster_shared,
                 "summary_key_shared": summary_shared,
@@ -647,7 +649,14 @@ def run(
     logger.info("wrote %s (%d rows)", out_path, len(result.frame))
 
     # write report
-    report = render_report(result.frame, result.excluded_ambiguous_keys, settings)
+    old_post_leader_count = len({entity.key for entity in sources[SOURCE_SHEETS]})
+    report = render_report(
+        result.frame,
+        result.excluded_ambiguous_keys,
+        settings,
+        post_counts,
+        old_post_leader_count,
+    )
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(report, encoding="utf-8")
     logger.info("wrote %s", report_path)
