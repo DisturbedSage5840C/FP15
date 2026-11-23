@@ -1,6 +1,6 @@
 PY ?= .venv/bin/python
 
-.PHONY: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report hinglish-check dedup-check dedup-characterise segmentation-score segmentation-viewer eda eda-variables gold-set-audit outcome-feasibility test test-stats dict-measures-test judge-io-test provisional-measures all
+.PHONY: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report hinglish-check dedup-check dedup-characterise segmentation-score segmentation-viewer eda eda-variables gold-set-audit outcome-feasibility test test-stats dict-measures-test judge-io-test provisional-measures provisional-leaders all
 check-key: ## fail with a clear message unless FP15_ID_KEY is set (environment or git-ignored .env); the value is never shown
 	$(PY) -m src.id_key
 verify:   ## check raw hash manifest (writes it on first run)
@@ -59,6 +59,8 @@ judge-io-test: ## tests for the LLM-judge plumbing (request, reply check, batch)
 	$(PY) -m pytest -q tests/test_judge_io.py
 provisional-measures: check-key verify ## PROVISIONAL per-post pronoun rates for every cleaned cell (data/derived/provisional_post_measures.csv, git-ignored, ids and numbers only); exploratory, G1 unsigned; not part of make all
 	$(PY) -m src.provisional_measures
+provisional-leaders: check-key verify ## PROVISIONAL leader-level mean rates, shrunk from post to leader (data/derived/provisional_leader_measures.csv, git-ignored; reports/provisional_leader_measures.md, aggregates only, "<5" under the minimum); exploratory, G1 unsigned; not part of make all
+	$(PY) -m src.provisional_leaders
 test-stats: ## tests for the statistics tools only (agreement, gold-set sampler, shrinkage and BH, and the thresholds loader they share); synthetic data only; not part of make all
 	$(PY) -m pytest -q tests/test_thresholds.py tests/test_agreement.py tests/test_gold_set.py tests/test_stats_tools.py
 all: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report eda eda-variables test
