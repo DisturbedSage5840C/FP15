@@ -403,3 +403,12 @@ PROVISIONAL, exploratory, not pre-registered. No gate is signed. Claims are abou
 
 **Still blocked**
 - G1 to G4 sign-offs, the LLM judge (`approved_to_run` stays false), pre-registration, and any gold-set coding.
+
+## Findings, 2026-11-24: Step 14D provisional robustness multiverse
+
+PROVISIONAL and exploratory. No gate is signed. This multiverse does not replace the pre-registration.
+
+- **What ran.** `make provisional-multiverse` reran the Step 14C without-sector random-intercept model for the two-group Founder-CEO versus Professional CEO contrast, the title-family joint test, and the firm-size joint test, for the I-rate and we-rate. The tracked output is `reports/provisional_multiverse.md`; it starts with the provisional banner and contains aggregates only.
+- **Variant grid.** The settings in `configs/thresholds.yaml` define 3 post minimums (10, 15 and 16), 3 outcome scales (raw rate, `log(1 + rate)`, and raw rate after trimming the highest 1% of leader means), and 3 cell sets (all, without possible-Hinglish, and without repost or embedded-post cells): 27 variants. With 2 rates and 3 reported terms, the one Benjamini-Hochberg pass covers 162 comparisons.
+- **Reporting limits.** Every variant row reports the requested estimate or joint p, interval where applicable, and BH-adjusted p. Counts under 5 are shown as "<5" and fitted-leader counts use the existing secondary-suppression rule. The report gives only the requested direction and raw-p count lines; it makes no causal claim or substantive interpretation.
+- **Still provisional.** G1 is unsigned, raw cells stand in for posts, the dictionary is English-only, possible-Hinglish marking is unvalidated, and no gold-set file was opened. The multiverse is a robustness display, not a pre-registration substitute.
