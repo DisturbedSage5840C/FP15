@@ -17,6 +17,11 @@ Matching ladder (applied to Company_Data person rows):
   Steps 3 and 4 are accepted only when they point to exactly one firm row; otherwise ambiguous.
 
 A firm row reached by step 3 or 4 for two or more leaders is recorded in firm_row_claims for each.
+
+An internally shared roster or summary key is not a reason to exclude a leader.  Its
+source-specific fields are not used as a match input and the output records that fact.
+Internally shared post-sheet and Company_Data keys are not merged: each source entry
+gets an opaque, distinct leader id and a source-specific shared-key flag.
 """
 from __future__ import annotations
 
@@ -112,7 +117,7 @@ POST_COLUMNS = ("leader", "company", "workbook", "sheet_idx", "text_kind")
 @dataclass(frozen=True)
 class MasterResult:
     frame: pd.DataFrame
-    excluded_ambiguous_keys: int  # name keys shared inside one source (get no id, never guessed)
+    excluded_ambiguous_keys: int  # retained for report-call compatibility; always zero
 
 
 # ---------------------------------------------------------------------------
@@ -256,6 +261,18 @@ def _source_flags(key: str, sources: Mapping[str, Sequence[Entity]]) -> dict[str
     }
 
 
+def _entities_by_key(entities: Sequence[Entity]) -> dict[str, list[Entity]]:
+    grouped: dict[str, list[Entity]] = {}
+    for entity in entities:
+        grouped.setdefault(entity.key, []).append(entity)
+    return grouped
+
+
+def _entry_id_key(key: str, source: str, ordinal: int) -> str:
+    """A non-reversible HMAC input for an entry that may not be merged by key."""
+    return f"{key}|{source}|{ordinal}"
+
+
 # ---------------------------------------------------------------------------
 # main build function
 # ---------------------------------------------------------------------------
@@ -286,30 +303,76 @@ def build_master(
     required_firm = [c for c in FIRM_COLUMNS if c in company.columns]
     _assert_columns(company, required_person, "Company_Data (PERSON_COLUMNS)")
 
-    # --- company row index by key (for direct lookup for in-company leaders) ---
-    # company entities have ref="row:N" (1-based); map key -> 0-based row index
+    # --- entities by source/key, and Company_Data row positions ---
+    # Company entities have ref="row:N" (1-based); preserve every position rather
+    # than silently choosing one for a duplicated Company_Data key.
     comp_entities = list(sources.get(SOURCE_COMPANY, ()))
-    _comp_key_to_row: dict[str, int] = {}
+    grouped = {src: _entities_by_key(ents) for src, ents in sources.items()}
+    _comp_key_to_rows: dict[str, list[int]] = {}
     for ent in comp_entities:
         try:
             idx = int(ent.ref.split("row:")[-1]) - 1
-            if ent.key not in _comp_key_to_row:
-                _comp_key_to_row[ent.key] = idx
+            _comp_key_to_rows.setdefault(ent.key, []).append(idx)
         except (ValueError, IndexError):
             pass
 
-    # --- find keys that are shared inside one source (ambiguous inside that source) ---
-    ambiguous_internal: set[str] = set()
-    for src, ents in sources.items():
-        cnt = Counter(e.key for e in ents)
-        ambiguous_internal.update(k for k, n in cnt.items() if n > 1)
-
-    # --- build the full universe ---
+    # --- build the full universe and the physical records to retain ---
     universe = _all_entities(sources)
     universe_keys = sorted(universe.keys())
+    records: list[tuple[str, Entity, str, dict[str, bool], int]] = []
+    for key in universe_keys:
+        per_source = {src: grouped.get(src, {}).get(key, []) for src in (
+            SOURCE_SHEETS, SOURCE_ROSTER, SOURCE_SUMMARIES, SOURCE_COMPANY
+        )}
+        post_shared = len(per_source[SOURCE_SHEETS]) > 1
+        company_shared = len(per_source[SOURCE_COMPANY]) > 1
+        roster_shared = len(per_source[SOURCE_ROSTER]) > 1
+        summary_shared = len(per_source[SOURCE_SUMMARIES]) > 1
 
-    excluded = ambiguous_internal
-    included_keys = [k for k in universe_keys if k not in excluded]
+        # A shared post or Company_Data key is not one person that can safely be
+        # merged. Keep each relevant source entry separately. Roster/summary rows
+        # are enrichment only and therefore never create extra master records.
+        if post_shared or company_shared:
+            physical = [
+                *( (SOURCE_SHEETS, entity) for entity in per_source[SOURCE_SHEETS] ),
+                *( (SOURCE_COMPANY, entity) for entity in per_source[SOURCE_COMPANY] ),
+            ]
+            for ordinal, (source, entity) in enumerate(physical, start=1):
+                flags = {
+                    "in_posts": source == SOURCE_SHEETS,
+                    "in_roster": bool(per_source[SOURCE_ROSTER]) and not roster_shared,
+                    "in_summaries": bool(per_source[SOURCE_SUMMARIES]) and not summary_shared,
+                    "in_company": source == SOURCE_COMPANY,
+                    "roster_key_shared": roster_shared,
+                    "summary_key_shared": summary_shared,
+                    "post_key_shared": post_shared,
+                    "company_key_shared": company_shared,
+                }
+                # post_counts is keyed only by name key. Never duplicate its cells
+                # across separately retained ambiguous post entries.
+                raw_cells = post_counts.get(key, 0) if source == SOURCE_SHEETS and ordinal == 1 else 0
+                records.append((_entry_id_key(key, source, ordinal), entity, key, flags, raw_cells))
+        else:
+            # A unique post-sheet key is the preferred match input; otherwise use
+            # the unique Company_Data row. Shared roster/summary values cannot
+            # supply an entity or company value for matching.
+            entity = (
+                per_source[SOURCE_SHEETS][0] if per_source[SOURCE_SHEETS]
+                else per_source[SOURCE_COMPANY][0] if per_source[SOURCE_COMPANY]
+                else per_source[SOURCE_ROSTER][0] if len(per_source[SOURCE_ROSTER]) == 1
+                else per_source[SOURCE_SUMMARIES][0]
+            )
+            flags = {
+                "in_posts": bool(per_source[SOURCE_SHEETS]),
+                "in_roster": bool(per_source[SOURCE_ROSTER]) and not roster_shared,
+                "in_summaries": bool(per_source[SOURCE_SUMMARIES]) and not summary_shared,
+                "in_company": bool(per_source[SOURCE_COMPANY]),
+                "roster_key_shared": roster_shared,
+                "summary_key_shared": summary_shared,
+                "post_key_shared": False,
+                "company_key_shared": False,
+            }
+            records.append((key, entity, key, flags, post_counts.get(key, 0)))
 
     # --- build firm index for step 3 ---
     if "CompanyName" in company.columns and "DomainName" in company.columns:
@@ -321,48 +384,40 @@ def build_master(
     # Only match non-company-source leaders against company entities.
     # Leaders that live IN Company_Data already know their row directly.
     # For leaders in non-company sources, run the full ladder.
-    non_company_entities = [
-        universe[k]
-        for k in included_keys
-        if k not in _comp_key_to_row
-    ]
+    non_company_entities = [entity for _, entity, key, flags, _ in records if entity.source != SOURCE_COMPANY]
     name_matches = _build_name_matches(non_company_entities, comp_entities)
 
     # --- build firm_row_claims counter ---
     # Counts all leaders that resolve to each firm row (via any step).
-    # firm_row_claims[row_idx] = set of all leader keys that point there
+    # firm_row_claims[row_idx] = all retained record ids that point there
     all_row_claimants: dict[int, list[str]] = {}
 
     # Pre-compute: for all leaders, which firm row do they resolve to?
     # We need a dry-run of the full matching to gather claimants.
-    for key in included_keys:
+    for record_id, entity, key, flags, _ in records:
         firm_row_idx_dry: int | None = None
 
-        if key in _comp_key_to_row:
-            firm_row_idx_dry = _comp_key_to_row[key]
+        if entity.source == SOURCE_COMPANY:
+            firm_row_idx_dry = int(entity.ref.split("row:")[-1]) - 1
         else:
             nm_result_dry = name_matches.get(key, (NONE, []))
             nm_method_dry, nm_idxs_dry = nm_result_dry
             if nm_method_dry in (NAME_EXACT, NAME_LOOSE) and nm_idxs_dry:
                 firm_row_idx_dry = nm_idxs_dry[0]
             elif nm_method_dry in (NONE, AMBIGUOUS) and firm_index is not None:
-                entity_dry = universe[key]
-                ck_dry = _company_key_for_entity(entity_dry)
+                ck_dry = _company_key_for_entity(entity)
                 if ck_dry:
                     step_dry = resolve_by_firm(ck_dry, firm_index)
                     if step_dry.method in (COMPANY_NAME, DOMAIN) and step_dry.rows:
                         firm_row_idx_dry = step_dry.rows[0]
 
         if firm_row_idx_dry is not None:
-            all_row_claimants.setdefault(firm_row_idx_dry, []).append(key)
+            all_row_claimants.setdefault(firm_row_idx_dry, []).append(record_id)
 
     # --- now build one row per leader ---
     rows: list[dict] = []
-    for key in included_keys:
-        entity = universe[key]
-        flags = _source_flags(key, sources)
-        raw_cells = post_counts.get(key, 0)
-        leader_id = id_of(key)
+    for record_id, entity, key, flags, raw_cells in records:
+        leader_id = id_of(record_id)
 
         match_method: str
         person_data: dict[str, str] = {}
@@ -372,8 +427,8 @@ def build_master(
         firm_row_idx: int | None = None
 
         # Leaders that are IN Company_Data get their row directly (name_exact by definition)
-        if key in _comp_key_to_row:
-            firm_row_idx = _comp_key_to_row[key]
+        if entity.source == SOURCE_COMPANY:
+            firm_row_idx = int(entity.ref.split("row:")[-1]) - 1
             person_data = _copy_columns(company, firm_row_idx, PERSON_COLUMNS)
             firm_data = _copy_columns(company, firm_row_idx, required_firm)
             scope = SCOPE_PERSON_AND_FIRM
@@ -492,6 +547,10 @@ def build_master(
             "in_roster": flags["in_roster"],
             "in_summaries": flags["in_summaries"],
             "in_company": flags["in_company"],
+            "roster_key_shared": flags["roster_key_shared"],
+            "summary_key_shared": flags["summary_key_shared"],
+            "post_key_shared": flags["post_key_shared"],
+            "company_key_shared": flags["company_key_shared"],
             "raw_post_cells": raw_cells,
             "match_method": match_method,
             "gender_as_coded": gender_raw,
@@ -511,7 +570,7 @@ def build_master(
         if col in frame.columns:
             frame = frame.drop(columns=[col])
 
-    return MasterResult(frame=frame, excluded_ambiguous_keys=len(excluded))
+    return MasterResult(frame=frame, excluded_ambiguous_keys=0)
 
 
 # ---------------------------------------------------------------------------

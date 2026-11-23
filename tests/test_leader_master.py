@@ -250,10 +250,10 @@ def test_the_dot_and_dash_markers_are_blank_in_the_carried_columns() -> None:
     assert row["Gender"] == "" and row["TotalEmployeeCount"] == ""
 
 
-# --- keys shared inside one source get no id and are counted, not guessed -----------------------------------------
+# --- keys shared inside one source are retained without guessing --------------------------------------------------
 
 
-def test_a_name_key_held_twice_inside_one_source_is_left_out_and_counted() -> None:
+def test_a_name_key_held_twice_inside_company_data_is_kept_as_separate_flagged_rows() -> None:
     twin_a = {**OTHER, "Person_Name": "Sam Hart"}
     twin_b = {**OTHER, "Person_Name": "Hart Sam", "CompanyName": "Gamma Co"}
     company = company_frame([ACME, twin_a, twin_b])
@@ -266,8 +266,12 @@ def test_a_name_key_held_twice_inside_one_source_is_left_out_and_counted() -> No
 
     result = build_master(sources, company, {}, fake_id)
 
-    assert result.excluded_ambiguous_keys == 1
-    assert len(result.frame) == 1
+    shared = result.frame[result.frame["company_key_shared"]]
+    assert result.excluded_ambiguous_keys == 0
+    assert len(result.frame) == 3
+    assert len(shared) == 2
+    assert shared["leader_id"].is_unique
+    assert shared["in_company"].all()
 
 
 # --- the output holds no names, links or keys ---------------------------------------------------------------------
