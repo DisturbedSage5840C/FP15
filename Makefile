@@ -69,4 +69,4 @@ provisional-compare: check-key verify ## PROVISIONAL group comparisons: shrunk r
 	$(PY) -m src.provisional_compare
 test-stats: ## tests for the statistics tools only (agreement, gold-set sampler, shrinkage and BH, and the thresholds loader they share); synthetic data only; not part of make all
 	$(PY) -m pytest -q tests/test_thresholds.py tests/test_agreement.py tests/test_gold_set.py tests/test_stats_tools.py
-all: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report eda eda-variables test
+all: check-key verify inventory ingest ids leader-table leader-master handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report eda eda-variables test
