@@ -313,3 +313,18 @@ The project owner told Claude to draw the 300-post gold set now and will review 
 - **Ids.** Post ids are the same `post_id` values the provisional measures use, so a drawn id points at the same cell in both files. The one empty cell cannot be drawn but keeps its place in the numbering. The ids and post text are in git-ignored `data/derived/gold_set_300.csv` only; no tracked file lists an id.
 - **Effect of choosing A.** Leaders with few posts can be in the gold set, and the main analysis uses only leaders with at least 15 posts, so some gold posts come from leaders the main analysis will not model. That is fine for checking a measure on posts, but the owner may prefer B.
 - **Open for the owner.** Confirm A or switch to B (one setting change and a re-draw, which would change which posts are in the set).
+
+## 2026-11-23: Widened leader universe (Step 14A) and confirmed gender coding
+
+Confirmed on 2026-11-23 by the project team from the data owner (Anshika Arora) and the course mentors:
+
+1. **Study table is now the union (Step 14A):** The master study table (`data/interim/leader_master.csv`, built by `make leader-master`) is now the union of all four people sources: post sheets, the roster, wordcount summaries, and Company_Data. Leaders with no post data stay in the table for firm-level information; post data is only needed for the presentation analysis.
+2. **What N means in later tables:** This decision changes what N means in all later tables. Previously, the base list N was the leaders who had posts (563/564). Now, the overall study universe N is **852** leaders (with 10 keys that appear multiple times within a single source excluded from being assigned an ID per the ID proposal rules). For firm-level analyses, N = 852 (of which 844 have matched Company_Data columns). For post-based and presentation analyses, posts are still required, with 554 leaders having at least 1 raw post cell and **322** leaders meeting the 15+ post cell threshold (`min_posts_per_leader`).
+3. **Gender coding confirmed:** Gender coding in Company_Data is confirmed as 1 = man and 0 = woman, with blank staying missing. Gender is never inferred from a name. This coding is recorded in `configs/gender_coding.yaml` with the confirmation note. This changes how gender is labelled in every later table and report: reports now display "coded 1 (man)" and "coded 0 (woman)" instead of treating gender as an uninterpreted open question.
+4. **Matching ladder:** Leaders are matched against Company_Data person rows in strict ladder order: (1) exact name key, (2) loose name key rule unchanged, (3) for leaders still unmatched or ambiguous, match on company name key, then on DomainName (accepted only if pointing to exactly one firm row; multiple counterparts stay ambiguous). Firm rows claimed by multiple leaders are recorded in `firm_row_claims`.
+
+### Findings: Step 14A matching and universe results
+
+- **Universe size:** Exactly 852 distinct clear leader keys across the four sources (post sheets: 555, roster: 646, summaries: 523, Company_Data: 842; 10 ambiguous duplicate keys within single sources get no ID). The expected range was 700 to 800; the actual universe size is 852 without rounding or trimming.
+- **Surprise in Step 3 matching ladder:** The company-name and domain matching steps added 0 new leaders over name-only matching. Name matching yielded 842 exact matches and 2 loose matches (844 total with Company_Data). Of the remaining 8 unmatched leaders, 7 had both company name and domain completely blank (missing stays missing), and 1 had a company name that did not match any firm or domain in Company_Data. None were left ambiguous.
+
