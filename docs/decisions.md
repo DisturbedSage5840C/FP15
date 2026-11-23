@@ -4,6 +4,7 @@ Format: date, who decided, what, why. Gate sign-offs need a human name.
 
 ## Gates
 - [ ] G1 segmentation (95% on 200 cells): not signed
+  - G1 PROVISIONAL (AI-assisted blind count, not a human sign-off): 200/200 exact, 2026-11-23, pending confirmation by the owner. See the 2026-11-23 entry below. The box stays unticked.
 - [ ] G2 measures vs gold set: not signed
 - [ ] G3 pre-registration: not signed
 - [ ] G4 clean rebuild: not signed
@@ -287,3 +288,15 @@ This is a finding, not a decision. PROVISIONAL, exploratory, not pre-registered.
 - **Latent limitation: model totals and hidden sector groups.** The model table shows its leader and cell totals, and the report's other tables imply the overall leader total. If a hidden group were ever inside the modelled set (a lone group under 5 whose next smallest partner is at or above the too-small-to-model minimum), differencing could recover the hidden count. In this run it cannot: the modelled sectors are all shown, and many sector groups are hidden at once. Not fixed, because it does not bite on this data; a rerun after a data or threshold change must re-check it.
 - **Still blocked.** The LLM judge (rubric and scale are placeholders, `approved_to_run` stays false), the 300-post gold set (not opened, drawn or coded), pre-registration (G3), and sign-off lines for G1 to G4. No numbers from this run are confirmatory. Which counter feeds the analysis (`dict_measures` or `voice.py`) is still open.
 - **Not done.** No network call, no scraping, no LLM call. No gold-set post was read or coded. No construct was defined, no new threshold was added, and no gate was signed off.
+
+## 2026-11-23: G1 PROVISIONAL, AI-assisted blind count of the 200 sampled cells (step 15)
+
+The project owner told Claude to do this count instead of waiting for a human count, and will review and correct it by hand later. That overrides the "human job" line in CLAUDE.md for this step only.
+
+**G1 PROVISIONAL (AI-assisted blind count, not a human sign-off): 200/200 exact, 2026-11-23, pending confirmation by the owner.**
+
+- **Result against the threshold.** Exact matches 200 of 200 (accuracy 1.000) against `segmentation_accuracy` 0.95 in `configs/thresholds.yaml`: at or above threshold. Machine lower than the count: 0. Machine higher: 0. Numbers are in `reports/segmentation_check.md`. This is not a sign-off, and the G1 box above stays unticked until the owner signs.
+- **How the count was done.** The 200 cells came from `make segmentation-sample`. Claude read each cell's text from the git-ignored `data/derived/segmentation_check_200.csv` and wrote a count in `human_post_count` before the segmenter was run on any of them. The sample file holds no machine counts. The scorer was run only after all 200 counts were saved. The counting rule is the one in the `src/segment.py` docstring. A repost or embedded post is one post by the leader, and a cell with no leader header is one post.
+- **Flagged cells.** 60 of the 200 carry a short note in `human_note` (git-ignored). Kinds: link or title only with no author header, an embedded company post under the leader's header, a leader header with no own text followed by another person's embedded header, a leader comment on another person's post, minimal text only, and one activity line. Each was counted as 1 by convention. The owner should look at the ones noted as flags first.
+- **What this check cannot show.** Every one of the 200 cells was counted 1, and the segmenter also found 1 in all 200. The sample has no cell with more than one post, so the check tests only "no false splits" and cannot test "missed splits". Because the counting rule is the segmenter's own rule, agreement on single-post cells is partly by construction. The 200/200 says nothing about how well the segmenter splits cells that hold several posts. Whether the multi-post cells exist in the full data is not known from this sample. This is a finding for the owner, not something to fix here.
+- **Not done.** The segmenter was not changed. No gate was signed off. No network call, no scraping, no LLM call. No post text, name or link is in any tracked file or in chat.
