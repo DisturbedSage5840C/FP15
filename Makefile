@@ -1,6 +1,6 @@
 PY ?= .venv/bin/python
 
-.PHONY: check-key verify inventory ingest ids leader-table leader-master handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report hinglish-check dedup-check dedup-characterise segmentation-score segmentation-viewer eda eda-variables gold-set-audit gold-set-draw outcome-feasibility test test-stats dict-measures-test judge-io-test provisional-measures provisional-leaders provisional-compare all
+.PHONY: check-key verify inventory ingest ids leader-table leader-master handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report hinglish-check dedup-check dedup-characterise segmentation-score segmentation-viewer eda eda-variables gold-set-audit gold-set-draw outcome-feasibility test test-stats dict-measures-test judge-io-test provisional-measures provisional-leaders provisional-compare provisional-multiverse all
 check-key: ## fail with a clear message unless FP15_ID_KEY is set (environment or git-ignored .env); the value is never shown
 	$(PY) -m src.id_key
 verify:   ## check raw hash manifest (writes it on first run)
@@ -67,6 +67,8 @@ provisional-leaders: check-key verify ## PROVISIONAL leader-level mean rates, sh
 	$(PY) -m src.provisional_leaders
 provisional-compare: check-key verify ## PROVISIONAL group comparisons: shrunk rates per group, random-intercept models, Benjamini-Hochberg across comparisons (reports/provisional_comparisons.md, aggregates only, "<5" under the minimum); exploratory, G1 unsigned; not part of make all
 	$(PY) -m src.provisional_compare
+provisional-multiverse: check-key verify ## PROVISIONAL Step 14D robustness grid for the without-sector comparisons (reports/provisional_multiverse.md, aggregates only, "<5" under the minimum); exploratory, G1 unsigned; not part of make all
+	$(PY) -m src.multiverse
 test-stats: ## tests for the statistics tools only (agreement, gold-set sampler, shrinkage and BH, and the thresholds loader they share); synthetic data only; not part of make all
 	$(PY) -m pytest -q tests/test_thresholds.py tests/test_agreement.py tests/test_gold_set.py tests/test_stats_tools.py
 all: check-key verify inventory ingest ids leader-table leader-master handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report eda eda-variables test

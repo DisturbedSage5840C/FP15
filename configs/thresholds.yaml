@@ -55,3 +55,13 @@ gold_set_raise_on_shortfall: true
 # in writing. While false, tests/test_no_network.py fails if any pipeline code imports a network library or opens a
 # connection. Do not set true on your own: see docs/scraping_spec.md for what must be answered first.
 scraping_approved: false
+
+# Step 14D (provisional robustness multiverse). These are SETTINGS for the variants, not pass marks, and nothing here
+# replaces the pre-registration. The main post minimum stays min_posts_per_leader above; the two below are the lower and
+# higher variants. trim_share: the share of the highest leader means dropped in the trimmed-scale variant.
+# log_offset: the constant added to a rate before the log in the log-scale variant.
+multiverse:
+  min_posts_lower: 10
+  min_posts_higher: 16
+  trim_share: 0.01
+  log_offset: 1
