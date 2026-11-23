@@ -328,3 +328,15 @@ Confirmed on 2026-11-23 by the project team from the data owner (Anshika Arora) 
 - **Universe size:** Exactly 852 distinct clear leader keys across the four sources (post sheets: 555, roster: 646, summaries: 523, Company_Data: 842; 10 ambiguous duplicate keys within single sources get no ID). The expected range was 700 to 800; the actual universe size is 852 without rounding or trimming.
 - **Surprise in Step 3 matching ladder:** The company-name and domain matching steps added 0 new leaders over name-only matching. Name matching yielded 842 exact matches and 2 loose matches (844 total with Company_Data). Of the remaining 8 unmatched leaders, 7 had both company name and domain completely blank (missing stays missing), and 1 had a company name that did not match any firm or domain in Company_Data. None were left ambiguous.
 
+## Findings, 2026-11-23: exact source distribution of the 10 ambiguous keys (Step 14B, Part 1)
+
+Breakdown in counts only (no names, links, or reversible ids) of the 10 keys that were flagged ambiguous inside single sources in the proposal table:
+
+- **Company_Data (`company`)**: Holds all 10 of the 10 keys. Every one of the 10 keys is unique in Company_Data (1 entry per key, 10 entries total; 0 duplicate keys).
+- **Post sheets (`sheets`)**: Holds 9 of the 10 keys. Every one of the 9 keys is unique in the post sheets (1 entry per key, 9 entries total; 1 key has 0 entries in sheets). Of these 9 leaders with posts, 5 have 15 or more raw post cells and 4 have between 1 and 14 cells.
+- **Wordcount summaries (`summaries`)**: Holds 9 of the 10 keys. Each of these 9 keys appears exactly twice in the summary sheets (2 entries per key, 18 entries total; 1 key has 0 entries). These 9 keys were marked ambiguous solely due to duplicate summary sheet lines.
+- **Roster (`roster`)**: Holds 6 of the 10 keys (7 entries total). 5 keys have exactly 1 entry in the roster, 1 key has 2 entries in the roster (the single duplicate in the roster; it has 0 entries in post sheets and summaries), and 4 keys have 0 entries in the roster.
+
+Thus, dropping these 10 ambiguous keys in Step 14A inadvertently dropped 9 legitimate leaders with posts (including 5 with 15+ posts) and 10 leaders with unique Company_Data rows, purely because of internal duplicates in enrichment files (summaries or roster).
+
+
