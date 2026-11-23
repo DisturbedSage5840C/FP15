@@ -4,7 +4,7 @@
 
 Every result below is exploratory. Nothing is pre-registered, no gate is signed, and a p-value says nothing about causes.
 
-- Groups come from the same labels as the EDA balance counts. Gender is used exactly as coded (1 and 0), with no meaning attached.
+- Gender, sector and firm size come from the leader master (data/interim/leader_master.csv). ceo_type and title family come from the post sheets, because the master carries neither. Gender words come from configs/gender_coding.yaml; a blank stays missing and nothing is inferred from a name. Leaders with no usable company match are labelled as such.
 - A count under 5 shows as "<5", and a lone hidden group hides its next smallest too. Groups with fewer than 20 leaders are marked "too small to model"; sector groups that small are left out of the models.
 - Models: one random intercept per leader, all five factors together, fitted by REML. The leader-level share of variance is leader variance over leader plus cell variance. Tests are joint Wald tests per factor from one fit.
 - Benjamini-Hochberg is applied once across every comparison in the last table, both measures and both cell sets together.
@@ -70,22 +70,22 @@ Every result below is exploratory. Nothing is pre-registered, no gate is signed,
 
 | group | measure | cell set | leaders | min | q1 | median | q3 | max | modelling |
 |---|---|---|---|---|---|---|---|---|---|
-| coded 0 | first-person singular (I-rate) | all cells | 29 | 0.04 | 0.51 | 0.81 | 1.42 | 6.88 |  |
-| coded 0 | first-person singular (I-rate) | without possible-Hinglish cells | 29 | 0.04 | 0.51 | 0.81 | 1.42 | 6.88 |  |
-| coded 0 | first-person plural (we-rate) | all cells | 29 | 0.28 | 0.74 | 1.18 | 1.53 | 3.02 |  |
-| coded 0 | first-person plural (we-rate) | without possible-Hinglish cells | 29 | 0.28 | 0.74 | 1.18 | 1.53 | 3.02 |  |
-| coded 1 | first-person singular (I-rate) | all cells | 226 | 0.03 | 0.33 | 0.61 | 1.12 | 11.90 |  |
-| coded 1 | first-person singular (I-rate) | without possible-Hinglish cells | 226 | 0.03 | 0.33 | 0.61 | 1.12 | 11.90 |  |
-| coded 1 | first-person plural (we-rate) | all cells | 226 | 0.30 | 0.71 | 1.13 | 1.61 | 5.43 |  |
-| coded 1 | first-person plural (we-rate) | without possible-Hinglish cells | 226 | 0.30 | 0.71 | 1.13 | 1.61 | 5.43 |  |
-| no usable company match | first-person singular (I-rate) | all cells | 7 | 0.17 | 0.28 | 0.36 | 0.55 | 0.82 | too small to model |
-| no usable company match | first-person singular (I-rate) | without possible-Hinglish cells | 7 | 0.17 | 0.28 | 0.36 | 0.55 | 0.82 | too small to model |
-| no usable company match | first-person plural (we-rate) | all cells | 7 | 0.23 | 0.64 | 0.94 | 1.25 | 2.32 | too small to model |
-| no usable company match | first-person plural (we-rate) | without possible-Hinglish cells | 7 | 0.23 | 0.64 | 0.94 | 1.25 | 2.32 | too small to model |
-| no value | first-person singular (I-rate) | all cells | 65 | 0.05 | 0.38 | 0.66 | 1.10 | 3.24 |  |
-| no value | first-person singular (I-rate) | without possible-Hinglish cells | 65 | 0.05 | 0.38 | 0.66 | 1.08 | 3.24 |  |
-| no value | first-person plural (we-rate) | all cells | 65 | 0.32 | 1.05 | 1.43 | 1.69 | 3.67 |  |
-| no value | first-person plural (we-rate) | without possible-Hinglish cells | 65 | 0.32 | 1.05 | 1.43 | 1.69 | 3.67 |  |
+| man | first-person singular (I-rate) | all cells | 228 | 0.03 | 0.33 | 0.61 | 1.10 | 11.90 |  |
+| man | first-person singular (I-rate) | without possible-Hinglish cells | 228 | 0.03 | 0.33 | 0.61 | 1.11 | 11.90 |  |
+| man | first-person plural (we-rate) | all cells | 228 | 0.23 | 0.71 | 1.12 | 1.58 | 5.43 |  |
+| man | first-person plural (we-rate) | without possible-Hinglish cells | 228 | 0.23 | 0.71 | 1.12 | 1.59 | 5.43 |  |
+| no usable company match | first-person singular (I-rate) | all cells | <5 | <5 | <5 | <5 | <5 | <5 | too small to model |
+| no usable company match | first-person singular (I-rate) | without possible-Hinglish cells | <5 | <5 | <5 | <5 | <5 | <5 | too small to model |
+| no usable company match | first-person plural (we-rate) | all cells | <5 | <5 | <5 | <5 | <5 | <5 | too small to model |
+| no usable company match | first-person plural (we-rate) | without possible-Hinglish cells | <5 | <5 | <5 | <5 | <5 | <5 | too small to model |
+| no value | first-person singular (I-rate) | all cells | 67 | 0.05 | 0.36 | 0.65 | 1.09 | 3.24 |  |
+| no value | first-person singular (I-rate) | without possible-Hinglish cells | 67 | 0.05 | 0.36 | 0.65 | 1.07 | 3.24 |  |
+| no value | first-person plural (we-rate) | all cells | 67 | 0.32 | 1.06 | 1.43 | 1.70 | 3.67 |  |
+| no value | first-person plural (we-rate) | without possible-Hinglish cells | 67 | 0.32 | 1.06 | 1.43 | 1.70 | 3.67 |  |
+| woman | first-person singular (I-rate) | all cells | <5 | <5 | <5 | <5 | <5 | <5 |  |
+| woman | first-person singular (I-rate) | without possible-Hinglish cells | <5 | <5 | <5 | <5 | <5 | <5 |  |
+| woman | first-person plural (we-rate) | all cells | <5 | <5 | <5 | <5 | <5 | <5 |  |
+| woman | first-person plural (we-rate) | without possible-Hinglish cells | <5 | <5 | <5 | <5 | <5 | <5 |  |
 
 ### Sector
 
@@ -111,10 +111,10 @@ Every result below is exploratory. Nothing is pre-registered, no gate is signed,
 | Business Services | first-person singular (I-rate) | without possible-Hinglish cells | 33 | 0.03 | 0.30 | 0.60 | 1.25 | 2.86 |  |
 | Business Services | first-person plural (we-rate) | all cells | 33 | 0.32 | 0.78 | 1.01 | 1.42 | 2.75 |  |
 | Business Services | first-person plural (we-rate) | without possible-Hinglish cells | 33 | 0.32 | 0.78 | 1.01 | 1.42 | 2.75 |  |
-| Chemicals and Materials | first-person singular (I-rate) | all cells | 10 | 0.26 | 0.49 | 0.72 | 1.32 | 2.05 | too small to model |
-| Chemicals and Materials | first-person singular (I-rate) | without possible-Hinglish cells | 10 | 0.26 | 0.49 | 0.72 | 1.32 | 2.05 | too small to model |
-| Chemicals and Materials | first-person plural (we-rate) | all cells | 10 | 0.28 | 1.15 | 1.35 | 1.73 | 2.19 | too small to model |
-| Chemicals and Materials | first-person plural (we-rate) | without possible-Hinglish cells | 10 | 0.28 | 1.15 | 1.35 | 1.73 | 2.19 | too small to model |
+| Chemicals and Materials | first-person singular (I-rate) | all cells | 11 | 0.26 | 0.50 | 0.82 | 1.22 | 2.05 | too small to model |
+| Chemicals and Materials | first-person singular (I-rate) | without possible-Hinglish cells | 11 | 0.26 | 0.50 | 0.82 | 1.22 | 2.05 | too small to model |
+| Chemicals and Materials | first-person plural (we-rate) | all cells | 11 | 0.28 | 1.03 | 1.33 | 1.62 | 2.19 | too small to model |
+| Chemicals and Materials | first-person plural (we-rate) | without possible-Hinglish cells | 11 | 0.28 | 1.03 | 1.33 | 1.62 | 2.19 | too small to model |
 | Conglomerates | first-person singular (I-rate) | all cells | 7 | 0.16 | 0.92 | 1.05 | 1.43 | 2.24 | too small to model |
 | Conglomerates | first-person singular (I-rate) | without possible-Hinglish cells | 7 | 0.16 | 0.92 | 1.05 | 1.43 | 2.24 | too small to model |
 | Conglomerates | first-person plural (we-rate) | all cells | 7 | 0.30 | 0.98 | 1.73 | 2.11 | 2.61 | too small to model |
@@ -199,10 +199,10 @@ Every result below is exploratory. Nothing is pre-registered, no gate is signed,
 | Real Estate and Construction Tech | first-person singular (I-rate) | without possible-Hinglish cells | <5 | <5 | <5 | <5 | <5 | <5 | too small to model |
 | Real Estate and Construction Tech | first-person plural (we-rate) | all cells | <5 | <5 | <5 | <5 | <5 | <5 | too small to model |
 | Real Estate and Construction Tech | first-person plural (we-rate) | without possible-Hinglish cells | <5 | <5 | <5 | <5 | <5 | <5 | too small to model |
-| Retail | first-person singular (I-rate) | all cells | 13 | 0.08 | 0.28 | 0.72 | 1.17 | 8.39 | too small to model |
-| Retail | first-person singular (I-rate) | without possible-Hinglish cells | 13 | 0.08 | 0.28 | 0.72 | 1.17 | 8.39 | too small to model |
-| Retail | first-person plural (we-rate) | all cells | 13 | 0.42 | 0.74 | 1.25 | 1.61 | 2.24 | too small to model |
-| Retail | first-person plural (we-rate) | without possible-Hinglish cells | 13 | 0.43 | 0.74 | 1.25 | 1.63 | 2.24 | too small to model |
+| Retail | first-person singular (I-rate) | all cells | 14 | 0.08 | 0.29 | 0.63 | 1.16 | 8.39 | too small to model |
+| Retail | first-person singular (I-rate) | without possible-Hinglish cells | 14 | 0.08 | 0.29 | 0.63 | 1.16 | 8.39 | too small to model |
+| Retail | first-person plural (we-rate) | all cells | 14 | 0.42 | 0.81 | 1.31 | 1.69 | 2.32 | too small to model |
+| Retail | first-person plural (we-rate) | without possible-Hinglish cells | 14 | 0.43 | 0.81 | 1.31 | 1.69 | 2.32 | too small to model |
 | Telecom | first-person singular (I-rate) | all cells | <5 | <5 | <5 | <5 | <5 | <5 | too small to model |
 | Telecom | first-person singular (I-rate) | without possible-Hinglish cells | <5 | <5 | <5 | <5 | <5 | <5 | too small to model |
 | Telecom | first-person plural (we-rate) | all cells | <5 | <5 | <5 | <5 | <5 | <5 | too small to model |
@@ -219,43 +219,43 @@ Every result below is exploratory. Nothing is pre-registered, no gate is signed,
 | Travel and Hospitality Tech | first-person singular (I-rate) | without possible-Hinglish cells | <5 | <5 | <5 | <5 | <5 | <5 | too small to model |
 | Travel and Hospitality Tech | first-person plural (we-rate) | all cells | <5 | <5 | <5 | <5 | <5 | <5 | too small to model |
 | Travel and Hospitality Tech | first-person plural (we-rate) | without possible-Hinglish cells | <5 | <5 | <5 | <5 | <5 | <5 | too small to model |
-| no usable company match | first-person singular (I-rate) | all cells | 7 | 0.17 | 0.28 | 0.36 | 0.55 | 0.82 | too small to model |
-| no usable company match | first-person singular (I-rate) | without possible-Hinglish cells | 7 | 0.17 | 0.28 | 0.36 | 0.55 | 0.82 | too small to model |
-| no usable company match | first-person plural (we-rate) | all cells | 7 | 0.23 | 0.64 | 0.94 | 1.25 | 2.32 | too small to model |
-| no usable company match | first-person plural (we-rate) | without possible-Hinglish cells | 7 | 0.23 | 0.64 | 0.94 | 1.25 | 2.32 | too small to model |
-| no value | first-person singular (I-rate) | all cells | 12 | 0.15 | 0.36 | 0.68 | 1.61 | 1.78 | too small to model |
-| no value | first-person singular (I-rate) | without possible-Hinglish cells | 12 | 0.15 | 0.36 | 0.68 | 1.61 | 1.78 | too small to model |
-| no value | first-person plural (we-rate) | all cells | 12 | 0.31 | 0.50 | 0.94 | 1.39 | 2.91 | too small to model |
-| no value | first-person plural (we-rate) | without possible-Hinglish cells | 12 | 0.31 | 0.50 | 0.94 | 1.39 | 2.91 | too small to model |
+| no usable company match | first-person singular (I-rate) | all cells | <5 | <5 | <5 | <5 | <5 | <5 | too small to model |
+| no usable company match | first-person singular (I-rate) | without possible-Hinglish cells | <5 | <5 | <5 | <5 | <5 | <5 | too small to model |
+| no usable company match | first-person plural (we-rate) | all cells | <5 | <5 | <5 | <5 | <5 | <5 | too small to model |
+| no usable company match | first-person plural (we-rate) | without possible-Hinglish cells | <5 | <5 | <5 | <5 | <5 | <5 | too small to model |
+| no value | first-person singular (I-rate) | all cells | 13 | 0.15 | 0.36 | 0.62 | 1.60 | 1.78 | too small to model |
+| no value | first-person singular (I-rate) | without possible-Hinglish cells | 13 | 0.15 | 0.36 | 0.62 | 1.60 | 1.78 | too small to model |
+| no value | first-person plural (we-rate) | all cells | 13 | 0.31 | 0.51 | 0.96 | 1.25 | 2.91 | too small to model |
+| no value | first-person plural (we-rate) | without possible-Hinglish cells | 13 | 0.31 | 0.51 | 0.96 | 1.25 | 2.91 | too small to model |
 
 ### Firm size band
 
 | group | measure | cell set | leaders | min | q1 | median | q3 | max | modelling |
 |---|---|---|---|---|---|---|---|---|---|
-| no usable company match | first-person singular (I-rate) | all cells | 7 | 0.17 | 0.28 | 0.36 | 0.55 | 0.82 | too small to model |
-| no usable company match | first-person singular (I-rate) | without possible-Hinglish cells | 7 | 0.17 | 0.28 | 0.36 | 0.55 | 0.82 | too small to model |
-| no usable company match | first-person plural (we-rate) | all cells | 7 | 0.23 | 0.64 | 0.94 | 1.25 | 2.32 | too small to model |
-| no usable company match | first-person plural (we-rate) | without possible-Hinglish cells | 7 | 0.23 | 0.64 | 0.94 | 1.25 | 2.32 | too small to model |
-| no value | first-person singular (I-rate) | all cells | 28 | 0.10 | 0.31 | 0.51 | 1.05 | 3.24 |  |
-| no value | first-person singular (I-rate) | without possible-Hinglish cells | 28 | 0.10 | 0.32 | 0.51 | 1.06 | 3.24 |  |
-| no value | first-person plural (we-rate) | all cells | 28 | 0.38 | 0.89 | 1.10 | 1.56 | 2.39 |  |
-| no value | first-person plural (we-rate) | without possible-Hinglish cells | 28 | 0.38 | 0.89 | 1.10 | 1.56 | 2.39 |  |
+| no usable company match | first-person singular (I-rate) | all cells | <5 | <5 | <5 | <5 | <5 | <5 | too small to model |
+| no usable company match | first-person singular (I-rate) | without possible-Hinglish cells | <5 | <5 | <5 | <5 | <5 | <5 | too small to model |
+| no usable company match | first-person plural (we-rate) | all cells | <5 | <5 | <5 | <5 | <5 | <5 | too small to model |
+| no usable company match | first-person plural (we-rate) | without possible-Hinglish cells | <5 | <5 | <5 | <5 | <5 | <5 | too small to model |
+| no value | first-person singular (I-rate) | all cells | <5 | <5 | <5 | <5 | <5 | <5 |  |
+| no value | first-person singular (I-rate) | without possible-Hinglish cells | <5 | <5 | <5 | <5 | <5 | <5 |  |
+| no value | first-person plural (we-rate) | all cells | <5 | <5 | <5 | <5 | <5 | <5 |  |
+| no value | first-person plural (we-rate) | without possible-Hinglish cells | <5 | <5 | <5 | <5 | <5 | <5 |  |
 | size band 1 (smallest) | first-person singular (I-rate) | all cells | 76 | 0.05 | 0.37 | 0.75 | 1.29 | 11.90 |  |
 | size band 1 (smallest) | first-person singular (I-rate) | without possible-Hinglish cells | 76 | 0.05 | 0.37 | 0.75 | 1.29 | 11.90 |  |
 | size band 1 (smallest) | first-person plural (we-rate) | all cells | 76 | 0.30 | 0.70 | 1.17 | 1.61 | 5.43 |  |
 | size band 1 (smallest) | first-person plural (we-rate) | without possible-Hinglish cells | 76 | 0.30 | 0.70 | 1.17 | 1.61 | 5.43 |  |
-| size band 2 | first-person singular (I-rate) | all cells | 59 | 0.03 | 0.34 | 0.54 | 1.19 | 2.86 |  |
-| size band 2 | first-person singular (I-rate) | without possible-Hinglish cells | 59 | 0.03 | 0.35 | 0.54 | 1.19 | 2.86 |  |
-| size band 2 | first-person plural (we-rate) | all cells | 59 | 0.32 | 0.76 | 1.27 | 1.63 | 3.67 |  |
-| size band 2 | first-person plural (we-rate) | without possible-Hinglish cells | 59 | 0.32 | 0.76 | 1.27 | 1.63 | 3.67 |  |
-| size band 3 | first-person singular (I-rate) | all cells | 76 | 0.04 | 0.50 | 0.76 | 1.19 | 4.49 |  |
-| size band 3 | first-person singular (I-rate) | without possible-Hinglish cells | 76 | 0.04 | 0.50 | 0.76 | 1.19 | 4.49 |  |
-| size band 3 | first-person plural (we-rate) | all cells | 76 | 0.28 | 0.90 | 1.28 | 1.73 | 2.93 |  |
-| size band 3 | first-person plural (we-rate) | without possible-Hinglish cells | 76 | 0.28 | 0.90 | 1.28 | 1.73 | 2.94 |  |
-| size band 4 (largest) | first-person singular (I-rate) | all cells | 81 | 0.04 | 0.29 | 0.54 | 0.85 | 6.88 |  |
-| size band 4 (largest) | first-person singular (I-rate) | without possible-Hinglish cells | 81 | 0.04 | 0.29 | 0.54 | 0.85 | 6.88 |  |
-| size band 4 (largest) | first-person plural (we-rate) | all cells | 81 | 0.30 | 0.69 | 0.97 | 1.67 | 3.02 |  |
-| size band 4 (largest) | first-person plural (we-rate) | without possible-Hinglish cells | 81 | 0.30 | 0.69 | 0.98 | 1.67 | 3.02 |  |
+| size band 2 | first-person singular (I-rate) | all cells | 62 | 0.03 | 0.34 | 0.54 | 1.15 | 2.86 |  |
+| size band 2 | first-person singular (I-rate) | without possible-Hinglish cells | 62 | 0.03 | 0.34 | 0.54 | 1.15 | 2.86 |  |
+| size band 2 | first-person plural (we-rate) | all cells | 62 | 0.23 | 0.76 | 1.24 | 1.59 | 3.67 |  |
+| size band 2 | first-person plural (we-rate) | without possible-Hinglish cells | 62 | 0.23 | 0.76 | 1.24 | 1.59 | 3.67 |  |
+| size band 3 | first-person singular (I-rate) | all cells | 77 | 0.04 | 0.51 | 0.74 | 1.18 | 4.49 |  |
+| size band 3 | first-person singular (I-rate) | without possible-Hinglish cells | 77 | 0.04 | 0.51 | 0.74 | 1.18 | 4.49 |  |
+| size band 3 | first-person plural (we-rate) | all cells | 77 | 0.28 | 0.87 | 1.27 | 1.72 | 2.93 |  |
+| size band 3 | first-person plural (we-rate) | without possible-Hinglish cells | 77 | 0.28 | 0.87 | 1.27 | 1.72 | 2.94 |  |
+| size band 4 (largest) | first-person singular (I-rate) | all cells | 82 | 0.04 | 0.29 | 0.54 | 0.85 | 6.88 |  |
+| size band 4 (largest) | first-person singular (I-rate) | without possible-Hinglish cells | 82 | 0.04 | 0.29 | 0.54 | 0.85 | 6.88 |  |
+| size band 4 (largest) | first-person plural (we-rate) | all cells | 82 | 0.30 | 0.69 | 0.98 | 1.68 | 3.02 |  |
+| size band 4 (largest) | first-person plural (we-rate) | without possible-Hinglish cells | 82 | 0.30 | 0.69 | 0.98 | 1.68 | 3.02 |  |
 
 ## Random-intercept models (exploratory)
 
