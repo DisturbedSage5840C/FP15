@@ -381,3 +381,25 @@ PROVISIONAL, exploratory, not pre-registered. No gate is signed. Claims are abou
 - Which pronoun counter (`dict_measures` or `voice.py`) feeds the final analysis, what any construct means, and any gold-set coding.
 
 **Check requested:** "Keys excluded due to internal source sharing" in `reports/leader_master.md` is zero. `build_master` sets `excluded_ambiguous_keys=0` and the report shows it as "<5" only because counts under 5 are suppressed.
+
+## Findings, 2026-11-24: Step 14C, fixes to the provisional comparisons
+
+PROVISIONAL, exploratory, not pre-registered. No gate is signed. Claims are about the image projected in public posts, never personality; the I-rate is one signal, not a narcissism score. Numbers are in `reports/provisional_comparisons.md`, not here.
+
+**What changed in the models**
+- **Models on all qualifying leaders.** The first Step 14 model fitted only the leaders left after sector groups under the "too small to model" rule were dropped. Now there are two models. The first has ceo_type, title family, gender and firm size band, with no sector, and takes every leader in the analysis sample with a known gender, a Founder-CEO or Professional CEO ceo_type and a size band. The second adds sector, with sectors under the "too small to model" minimum pooled into one "other sectors" group instead of dropped; a leader with an unknown sector is left out of the second model only. Nobody is filled in: a blank, an unmatched or an unreadable value keeps the leader out of the model that needs it.
+- **Founder-CEO against Professional CEO, two groups only.** Leaders whose ceo_type is blank or conflicting are no longer a third level in the test, so the ceo_type test has 1 degree of freedom. The report gives the estimated difference (Professional CEO minus Founder-CEO) with its interval for the I-rate and the we-rate. The interval level is one minus `fdr_q` in `configs/thresholds.yaml`, so no new threshold was added. Benjamini-Hochberg is applied once across all comparisons: both models, both measures and both cell sets together.
+- **Gender table.** The disclosure minimum now decides whether a group is shown, so the woman group is shown when it has at least the minimum. A group may still be hidden: when one group is under the minimum, the printed total would give its count away by subtraction, so a partner group is hidden with it. The partner is a group of unknown gender where there is one (no value, no usable company match, other code), otherwise the next smallest group, and the hidden groups together always reach the minimum. The same pairing now applies to the size and sector tables. A tracked-report note says this.
+- **Review found three disclosure leaks, now fixed.** (1) With the gender table's small group hidden alone, the printed total gave its count by subtraction. (2) A table of exclusions per rule gave the same count by subtraction against the shown "no value" group; that table was not requested, duplicated the group counts, and has been removed. (3) Fitted-leader counts could differ from the analysis sample or from another model's count by less than 5, which reads off a small count. Counts are now settled from largest to smallest across the whole table, and any count within 5 of an exact number already printed shows as a lower bound instead.
+
+**Leader count in each model is now shown**
+- The model table lists the leaders fitted in each model next to the analysis sample. Before, the report showed only the analysis-sample total, which hid how many leaders each model really used. A count under 5 shows as "<5"; a count within 5 of another printed count shows as a lower bound (see above).
+
+**Decision: the gold-set draw stays as drawn**
+- The gold-set draw was stratified on the original Company_Data labels, now frozen in `src/gold_set_groups.py`. It stays as drawn on those labels and is not redrawn on the leader-master labels. This is a human decision, recorded here at the team's instruction; nothing was redrawn and the gold-set files were not opened.
+
+**Finding: the G1 200/200 result is uninformative**
+- The G1 segmentation check scored 200 of 200, but most cells hold one post, so the check could not fail in the way segmentation errors matter (one cell wrongly merging or splitting several posts). Read it as uninformative about segmentation accuracy, not as evidence that segmentation works. It was not re-evaluated here and G1 stays unsigned.
+
+**Still blocked**
+- G1 to G4 sign-offs, the LLM judge (`approved_to_run` stays false), pre-registration, and any gold-set coding.
