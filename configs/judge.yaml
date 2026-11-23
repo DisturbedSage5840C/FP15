@@ -1,0 +1,18 @@
+# LLM-judge settings. Nothing here decides what a trait means: the names are labels only, and the rubric and the scale
+# are for the humans to write. src/judge_io.py refuses to build a request while rubric_text or score_scale is still
+# PLACEHOLDER, while approved_to_run is false, or while provider_no_training is not true.
+# approved_to_run is a HUMAN switch. Set it to true only after the rubric and scale are filled in and the judge is cleared
+# to run (log that in docs/decisions.md). No code or test may flip it.
+# score_scale, once filled in, is a list of the allowed numeric values, written by the humans.
+# model_name is left empty until the humans choose; the client is created outside src/judge_io.py.
+traits:
+  - intelligence
+  - self_confidence
+  - determination
+  - integrity
+  - sociability
+rubric_text: PLACEHOLDER
+score_scale: PLACEHOLDER
+provider_no_training: true
+approved_to_run: false
+model_name: ""
