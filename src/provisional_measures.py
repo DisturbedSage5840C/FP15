@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import sys
+from collections.abc import Set as AbstractSet
 from pathlib import Path
 
 import pandas as pd
@@ -16,7 +17,10 @@ import pandas as pd
 from src.dict_measures import count_pronouns
 from src.post_cleaning import DEFAULT_CLEAN_PATH
 from src.post_fields import HINGLISH
+from src.harmonise import DEFAULT_INTERIM_DIR
 from src.provisional_common import DEFAULT_MEASURES_PATH, write_banner_csv
+from src.reaction_count_check import _read_posts
+from src.segment import raw_cell_frame, ref_for, segment_cell
 from src.verify_raw import DEFAULT_RAW_DIR, ManifestMismatch
 from src.verify_raw import run as verify_raw
 
@@ -26,7 +30,9 @@ POST_ID_PREFIX = "p"
 POST_ID_DIGITS = 6
 CELL_KEY = ("leader_id", "workbook", "sheet_idx", "source_row")
 INPUT_COLUMNS = (*CELL_KEY, "post_text_clean", "language")
-MEASURE_COLUMNS = ("leader_id", "post_id", "word_count", "singular_per_100", "plural_per_100", "hinglish_flag")
+MEASURE_COLUMNS = (
+    "leader_id", "post_id", "word_count", "singular_per_100", "plural_per_100", "hinglish_flag", "repost_flag"
+)
 
 
 def _require(cells: pd.DataFrame) -> None:
@@ -58,8 +64,29 @@ def _rates(text: object) -> tuple[int, float, float]:
     return counts.word_count, counts.singular_per_100, counts.plural_per_100
 
 
-def measure_cells(cells: pd.DataFrame) -> pd.DataFrame:
-    """One row per cleaned cell: ids, word count, the two rates, and a 0/1 mark for a possible-Hinglish cell."""
+def repost_refs(posts: pd.DataFrame) -> set[str]:
+    """Refs of raw cells whose post carries an embedded post or a repost notice, by the existing segmenter.
+
+    PROVISIONAL: the segmenter is unscored (G1 unsigned) and matches the feed name to the leader's name key, so a
+    header written under another spelling reads as embedded and an unmatched one reads as not. The leader's name is used
+    here in memory only; the refs hold no name.
+    """
+    frame = raw_cell_frame(posts)
+    flagged = [segment_cell(text, key).is_repost for key, text in zip(frame["leader_key"], frame["text"], strict=True)]
+    return set(frame.loc[flagged, "ref"])
+
+
+def _repost_flags(ordered: pd.DataFrame, flagged: AbstractSet[str] | None) -> list[float]:
+    """1 for a flagged cell and 0 for the rest; with no marker at all every cell is NaN (unknown), never 0."""
+    if flagged is None:
+        return [float("nan")] * len(ordered)
+    refs = (ref_for(*key) for key in zip(ordered["workbook"], ordered["sheet_idx"], ordered["source_row"], strict=True))
+    return [float(ref in flagged) for ref in refs]
+
+
+def measure_cells(cells: pd.DataFrame, flagged_reposts: AbstractSet[str] | None = None) -> pd.DataFrame:
+    """One row per cleaned cell: ids, word count, the two rates, a 0/1 mark for a possible-Hinglish cell and one for a
+    repost or embedded-post cell (NaN when no marker was supplied)."""
     _require(cells)
     ordered = _sorted_cells(cells)
     rates = [_rates(text) for text in ordered["post_text_clean"]]
@@ -71,6 +98,7 @@ def measure_cells(cells: pd.DataFrame) -> pd.DataFrame:
             "singular_per_100": [singular for _, singular, _ in rates],
             "plural_per_100": [plural for _, _, plural in rates],
             "hinglish_flag": (ordered["language"] == HINGLISH).astype(int),
+            "repost_flag": _repost_flags(ordered, flagged_reposts),
         },
         columns=list(MEASURE_COLUMNS),
     )
@@ -80,12 +108,13 @@ def run(
     raw_dir: Path = DEFAULT_RAW_DIR,
     clean_path: Path = DEFAULT_CLEAN_PATH,
     out_path: Path = DEFAULT_MEASURES_PATH,
+    interim_dir: Path = DEFAULT_INTERIM_DIR,
 ) -> int:
     """Verify the raw manifest, measure every cleaned cell, write the git-ignored file; 0 on success, 1 on failure."""
     try:
         logger.info("manifest %s for %s", verify_raw(raw_dir), raw_dir)
         cells = pd.read_csv(clean_path, dtype=str, keep_default_na=False, usecols=list(INPUT_COLUMNS))
-        measured = measure_cells(cells)
+        measured = measure_cells(cells, repost_refs(_read_posts(interim_dir)))
     except (ManifestMismatch, FileNotFoundError, ValueError) as error:
         logger.error("provisional-measures FAILED: %s", error)
         return 1

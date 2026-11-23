@@ -11,7 +11,8 @@ import pandas as pd
 import pytest
 
 from src.provisional_common import BANNER, read_banner_csv, write_banner_csv
-from src.provisional_measures import MEASURE_COLUMNS, measure_cells, run
+from src.provisional_measures import MEASURE_COLUMNS, measure_cells, repost_refs, run
+from src.segment import ref_for
 
 HAND_COUNTED = "I built this with my team and we shipped it for our clients while I'm learning from all of them"
 
@@ -110,3 +111,61 @@ def test_run_refuses_when_the_raw_manifest_does_not_match(tmp_path: Path) -> Non
 
     assert code == 1
     assert not (tmp_path / "out.csv").exists()
+
+
+FEED_HEADER = "Ann Sentinel\n• 3rd+\nmy own words here"
+EMBEDDED = "Ann Sentinel\n• 3rd+\nmy words\nBob Sentinel\n• 3rd+\ntheir words"
+NOTICE = "Ann Sentinel\n• 3rd+\nBob Sentinel reposted this\nsome shared words"
+
+
+def _raw_posts(rows: list[tuple[str, str, str, str, str]]) -> pd.DataFrame:
+    """(leader name, workbook, sheet_idx, source_row, text) as harmonised raw cells."""
+    return pd.DataFrame(
+        [
+            {"leader": name, "workbook": wb, "sheet_idx": sheet, "source_row": row, "post_text": text, "text_kind": "raw"}
+            for name, wb, sheet, row, text in rows
+        ]
+    )
+
+
+def test_repost_refs_flag_cells_with_an_embedded_post_or_a_repost_notice_and_no_others() -> None:
+    posts = _raw_posts(
+        [
+            ("Ann Sentinel", "a", "0", "2", FEED_HEADER),
+            ("Ann Sentinel", "a", "0", "3", EMBEDDED),
+            ("Ann Sentinel", "a", "0", "4", NOTICE),
+            ("Ann Sentinel", "a", "0", "5", "no header at all"),
+        ]
+    )
+
+    flagged = repost_refs(posts)
+
+    assert flagged == {ref_for("a", "0", "3"), ref_for("a", "0", "4")}
+
+
+def test_repost_refs_ignore_cleaned_rows() -> None:
+    posts = _raw_posts([("Ann Sentinel", "a", "0", "3", EMBEDDED)]).assign(text_kind="cleaned")
+
+    assert repost_refs(posts) == set()
+
+
+def test_measure_cells_marks_flagged_cells_and_keeps_the_rest_zero() -> None:
+    raw = cells([("L1", "a", "0", "2", "I like it"), ("L1", "a", "0", "3", "I like it")])
+
+    frame = measure_cells(raw, {ref_for("a", "0", "3")})
+
+    assert frame["repost_flag"].tolist() == [0, 1]
+
+
+def test_without_a_repost_marker_the_flag_is_missing_not_zero() -> None:
+    frame = measure_cells(cells([("L1", "a", "0", "2", "I like it")]))
+
+    assert frame["repost_flag"].isna().all()
+
+
+def test_the_flag_column_holds_no_name_or_ref() -> None:
+    raw = cells([("L1", "secret_book.xlsx", "0", "3", "I like it")])
+
+    text = measure_cells(raw, {ref_for("secret_book.xlsx", "0", "3")}).to_csv(index=False)
+
+    assert "secret" not in text and "Sentinel" not in text
