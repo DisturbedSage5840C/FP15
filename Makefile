@@ -1,6 +1,6 @@
 PY ?= .venv/bin/python
 
-.PHONY: check-key verify inventory ingest ids leader-table handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report hinglish-check dedup-check dedup-characterise segmentation-score segmentation-viewer eda eda-variables gold-set-audit gold-set-draw outcome-feasibility test test-stats dict-measures-test judge-io-test provisional-measures provisional-leaders provisional-compare all
+.PHONY: check-key verify inventory ingest ids leader-table leader-master handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report hinglish-check dedup-check dedup-characterise segmentation-score segmentation-viewer eda eda-variables gold-set-audit gold-set-draw outcome-feasibility test test-stats dict-measures-test judge-io-test provisional-measures provisional-leaders provisional-compare all
 check-key: ## fail with a clear message unless FP15_ID_KEY is set (environment or git-ignored .env); the value is never shown
 	$(PY) -m src.id_key
 verify:   ## check raw hash manifest (writes it on first run)
@@ -14,6 +14,8 @@ ids: check-key ## build the keyed leader_id table across the three people lists
 	$(PY) -m src.ids
 leader-table: check-key ## base list of leaders with posts, enriched from roster, summaries and Company_Data (reports/leader_table.md)
 	$(PY) -m src.leader_table
+leader-master: check-key verify ## widen the leader table to every leader across the four sources (reports/leader_master.md)
+	$(PY) -m src.leader_master
 handcheck: check-key ## list ambiguous, unmatched and mismatched Company_Data names with candidates (data/derived/handcheck_names.csv, git-ignored)
 	$(PY) -m src.handcheck_names
 reaction-check: check-key ## count trailing-number shapes in raw posts and draw the hand-check sample (data/derived, git-ignored)
