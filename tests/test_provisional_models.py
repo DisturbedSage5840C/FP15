@@ -82,3 +82,39 @@ def test_too_few_leaders_is_reported_with_a_note() -> None:
 
     assert math.isnan(share.icc)
     assert share.note != ""
+
+
+def test_a_two_level_factor_reports_its_difference_with_an_interval_and_the_direction() -> None:
+    tests = {test.factor: test for test in factor_tests(invented_posts(), ("A", "B"))}
+
+    test = tests["A"]
+    assert test.contrast == "y minus x"
+    assert -4.0 < test.estimate < -2.0
+    assert test.lower < test.estimate < test.upper
+    assert test.lower < -3.0 < test.upper
+
+
+def test_the_interval_and_the_p_value_agree_about_zero() -> None:
+    tests = {test.factor: test for test in factor_tests(invented_posts(effect=0.0), ("A", "B"))}
+
+    test = tests["A"]
+    assert (test.lower < 0.0 < test.upper) == (test.p_value > 0.05)
+
+
+def test_a_factor_with_three_levels_has_no_single_difference() -> None:
+    tests = {test.factor: test for test in factor_tests(invented_posts(), ("A", "B"))}
+
+    assert tests["B"].contrast == ""
+    assert math.isnan(tests["B"].estimate)
+    assert math.isnan(tests["B"].lower)
+    assert math.isnan(tests["B"].upper)
+
+
+def test_a_one_degree_test_equals_the_two_sided_normal_test_of_the_difference() -> None:
+    from scipy.stats import norm
+
+    test = {t.factor: t for t in factor_tests(invented_posts(effect=0.4), ("A",))}["A"]
+
+    half_width = (test.upper - test.lower) / 2
+    z = abs(test.estimate) / (half_width / norm.ppf(0.975))
+    assert math.isclose(2 * norm.sf(z), test.p_value, rel_tol=1e-6)

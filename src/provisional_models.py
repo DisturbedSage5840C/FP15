@@ -22,10 +22,11 @@ from typing import Any
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
-from scipy.stats import chi2
+from scipy.stats import chi2, norm
 from statsmodels.tools.sm_exceptions import ConvergenceWarning
 
 from src.eda_common import DEFAULT_THRESHOLDS_PATH, load_eda_settings
+from src.stats_tools import FDR_Q_KEY, load_threshold
 
 logger = logging.getLogger(__name__)
 
@@ -51,12 +52,20 @@ class VarianceShare:
 
 @dataclass(frozen=True)
 class FactorTest:
-    """Joint Wald test of one factor in the joint model."""
+    """Joint Wald test of one factor in the joint model.
+
+    A factor with exactly two levels has 1 degree of freedom and also carries the estimated difference (the second
+    level minus the first in sorted order, named in `contrast`) with its interval; otherwise those stay empty / NaN.
+    """
 
     factor: str
     df: int
     p_value: float
     note: str
+    contrast: str = ""
+    estimate: float = float("nan")
+    lower: float = float("nan")
+    upper: float = float("nan")
 
 
 @dataclass(frozen=True)
@@ -64,6 +73,7 @@ class _Fit:
     result: Any
     columns_by_factor: dict[str, list[str]]
     dropped_by_factor: dict[str, int]
+    levels_by_factor: dict[str, list[str]]
     note: str
 
 
@@ -135,7 +145,8 @@ def _fit(data: pd.DataFrame, factors: Sequence[str]) -> _Fit:
             warnings.warn(item.message, item.category, stacklevel=2)
     messages = sorted({str(item.message) for item in caught if issubclass(item.category, ConvergenceWarning)})
     note = "convergence warning: " + "; ".join(messages) if messages else ""
-    return _Fit(result, columns_by_factor, dropped, note)
+    levels = {factor: sorted(data[factor].astype(str).unique()) for factor in columns_by_factor}
+    return _Fit(result, columns_by_factor, dropped, levels, note)
 
 
 def _min_leaders(thresholds_path: Path) -> int:
@@ -170,7 +181,25 @@ def variance_share(
     return VarianceShare(icc, int(data[LEADER_COLUMN].nunique()), len(data), fit.note)
 
 
-def _wald(fit: _Fit, factor: str) -> FactorTest:
+def _interval_level(thresholds_path: Path) -> float:
+    """Confidence level of the reported intervals: one minus the existing fdr_q, so no new cut is introduced."""
+    return 1.0 - float(load_threshold(FDR_Q_KEY, thresholds_path))
+
+
+def _difference(fit: _Fit, factor: str, column: str, thresholds_path: Path) -> dict[str, Any]:
+    """Estimate and interval of the second level minus the first, for a two-level factor with one kept column."""
+    first, second = fit.levels_by_factor[factor]
+    estimate = float(fit.result.fe_params[column])
+    half_width = float(norm.ppf(0.5 + _interval_level(thresholds_path) / 2)) * float(fit.result.bse_fe[column])
+    return {
+        "contrast": f"{second} minus {first}",
+        "estimate": estimate,
+        "lower": estimate - half_width,
+        "upper": estimate + half_width,
+    }
+
+
+def _wald(fit: _Fit, factor: str, thresholds_path: Path = DEFAULT_THRESHOLDS_PATH) -> FactorTest:
     columns = fit.columns_by_factor[factor]
     if not columns:
         return FactorTest(factor, 0, float("nan"), ALIASED_NOTE)
@@ -182,7 +211,9 @@ def _wald(fit: _Fit, factor: str) -> FactorTest:
     notes = [fit.note] if fit.note else []
     if dropped:
         notes.append(f"{dropped} column(s) repeat an earlier factor and were dropped")
-    return FactorTest(factor, len(columns), p_value, "; ".join(notes))
+    two_levels = len(fit.levels_by_factor[factor]) == MIN_LEVELS and len(columns) == 1
+    difference = _difference(fit, factor, columns[0], thresholds_path) if two_levels else {}
+    return FactorTest(factor, len(columns), p_value, "; ".join(notes), **difference)
 
 
 def _untested(factor: str, note: str) -> FactorTest:
@@ -201,7 +232,7 @@ def factor_tests(
     usable = [factor for factor in factors if data[factor].astype(str).nunique() >= MIN_LEVELS]
     try:
         fit = _fit(data, usable)
-        tests = {factor: _wald(fit, factor) for factor in usable}
+        tests = {factor: _wald(fit, factor, thresholds_path) for factor in usable}
     except (np.linalg.LinAlgError, ValueError) as error:
         logger.warning("factor tests: %s (%s)", FIT_FAILED_NOTE, error)
         return [_untested(factor, FIT_FAILED_NOTE) for factor in factors]
