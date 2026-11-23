@@ -10,7 +10,7 @@ Counts only: no cell references, no ids, no post text. The sample itself is `dat
 | Seed | 20261107 |
 | Cells in the sample file | 200 |
 | Leaders in the sample file | 200 |
-| Cells with a human count filled in | 0 |
+| Cells with a human count filled in | 200 |
 | Sample matches a fresh draw from the seed | yes |
 
 The draw takes one cell per leader where it can, from sorted cells with the seed above, so the same seed gives the same sample. The sample holds no machine count, so the human count is blind.
