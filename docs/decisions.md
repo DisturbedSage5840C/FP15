@@ -260,3 +260,14 @@ This is a finding, not a decision. Nothing about what any trait means was decide
 - **Finding 3: replies are read strictly, on purpose.** A reply is accepted only as one JSON object with the same `post_id` and exactly one number per configured trait, each on the configured scale. A fenced reply, a number sent as text, a repeated key, a missing or extra trait, or a value off the scale is not repaired. The post stays missing and is listed by `post_id` with a fixed code. If real replies turn out to need a looser format, that is a human decision to record here.
 - **Finding 4: what reaches disk and logs.** The output file holds `post_id` and numbers only, with blank cells for a failed post. Logs carry counts, ids and codes, never text. The client is passed in and is created outside `src/judge_io.py`, so the no-training setting at the provider and the model choice stay a human step.
 - **Not done.** No rubric or scale was written, no model name was chosen, nothing was sent anywhere, and no gold-set post was coded. No gate was signed off and no real data was read.
+
+## 2026-11-23: dict_measures is the pronoun counter for the provisional run, not the final choice (step 14, part 1)
+
+PROVISIONAL, exploratory, not pre-registered. G1 is unsigned, so raw cells stand in for posts.
+
+- **Which counter.** `src.dict_measures.count_pronouns` computes the first-person singular and plural rates per 100 words for the provisional run (`make provisional-measures`). `src/voice.py` was not touched and was not used for this run.
+- **This is not the final choice.** Which of `dict_measures` and `voice.py` feeds the analysis is still open and still a human decision. The differences between them are in the Step 12 findings (all-caps "US", hyphenated words, text with no words).
+- **Zero-word cells stay missing.** `count_pronouns` returns zeros for text with no words; the provisional stage turns those cells into missing values so that they are never read as a rate of zero.
+- **Possible-Hinglish cells are kept and marked.** The cleaned file's `language` flag decides it (`Hinglish`); the per-post file carries a 0/1 mark, and every later summary shows results with and without those cells.
+- **Ids.** `post_id` is a sequential id in a fixed cell order. It holds no file name, row number or name. The per-post file lives in git-ignored `data/derived/` with `leader_id` and `post_id` only, and starts with the PROVISIONAL banner.
+- **Not done.** No gate was signed off. The gold set was not opened. No judge or network call was made.
