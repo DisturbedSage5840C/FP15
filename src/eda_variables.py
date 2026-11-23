@@ -19,7 +19,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-from src.ceo_gender_counts import CODED_ONE, CODED_ZERO
+from src.ceo_gender_counts import CODED_ONE, CODED_ZERO, load_gender_coding
 from src.company_columns import RAW_KIND, leader_post_counts
 from src.company_data import WATCHED_HEADERS, clean_cell
 from src.eda_common import DEFAULT_THRESHOLDS_PATH, EdaSettings, load_eda_settings, show_count, show_share
@@ -139,14 +139,23 @@ def _leader_rows(posts: pd.DataFrame, members: set[str]) -> tuple[VariableRow, .
 # ---- Company_Data variables (leaders with a clear match) --------------------------------------
 
 
-def _gender_rows(company: pd.DataFrame, positions: list[int], coded: VariableRow) -> tuple[VariableRow, ...]:
+def _gender_rows(
+    company: pd.DataFrame,
+    positions: list[int],
+    coded: VariableRow,
+    coding: Mapping[str, str] | None = None,
+) -> tuple[VariableRow, ...]:
+    if coding is None:
+        coding = load_gender_coding()
     values = [clean_cell(company.iloc[position][GENDER_COLUMN]) for position in positions]
     total = len(positions)
     ones, zeros = values.count(CODED_ONE), values.count(CODED_ZERO)
     filled = sum(value is not None for value in values)
+    label_1 = f"gender coded 1 ({coding['1']})" if "1" in coding else "gender coded 1"
+    label_0 = f"gender coded 0 ({coding['0']})" if "0" in coding else "gender coded 0"
     parts = (
-        ("gender_coded_1", "gender coded 1", ones),
-        ("gender_coded_0", "gender coded 0", zeros),
+        ("gender_coded_1", label_1, ones),
+        ("gender_coded_0", label_0, zeros),
         ("gender_coded_other", "gender coded as another value", filled - ones - zeros),
         ("gender_no_value", "gender with no value", total - filled),
     )
@@ -306,8 +315,9 @@ def _notes(rows: Sequence[VariableRow]) -> list[str]:
         "- N is the leaders with at least 1 raw post cell (post-workbook variables), the leaders with a clear "
         "Company_Data match (company variables), or the cells (derived variables).",
         '- "." and "-" count as blank. A number that cannot be read (for example "500+") counts as missing.',
-        "- Gender is shown as coded in Company_Data. What 1 and 0 mean is not confirmed, and gender is never inferred "
-        "from names.",
+        "- Gender is shown as coded in Company_Data, with labels from configs/gender_coding.yaml (confirmed "
+        "2026-11-23 by the project team from the data owner and mentors: 1 = man, 0 = woman). Gender is never "
+        "inferred from names.",
         "- Study role is a proposal for the humans to confirm. Usable yes means at least one value is filled; it is "
         "not a judgment that the variable is adequate for a model.",
         "- Cells ending in a number are unverified: they may be reaction counts, years or ages.",

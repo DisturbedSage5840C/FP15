@@ -8,10 +8,12 @@ from __future__ import annotations
 import logging
 import sys
 from collections import defaultdict
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
+import yaml
 
 from src.company_data import BLANK_MARKERS, GENDER_COLUMN
 from src.harmonise import DEFAULT_INTERIM_DIR
@@ -23,6 +25,7 @@ from src.verify_raw import run as verify_raw
 logger = logging.getLogger(__name__)
 
 DEFAULT_REPORT_PATH = Path("reports/ceo_type_gender_counts.md")
+DEFAULT_GENDER_CODING_PATH = Path("configs/gender_coding.yaml")
 POSTS_FILE = "harmonised_posts.csv"
 COMPANY_FILE = "company_data.csv"
 LEADER_COLUMN = "leader"
@@ -33,6 +36,14 @@ KNOWN_LABELS = frozenset({PROFESSIONAL, FOUNDER})
 CODED_ONE, CODED_ZERO = "1", "0"
 
 _BLANK, _UNRECOGNISED, _CONFLICTING = "blank", "unrecognised", "conflicting"
+
+
+def load_gender_coding(path: Path = DEFAULT_GENDER_CODING_PATH) -> dict[str, str]:
+    """Read configs/gender_coding.yaml (confirmed: 1 = man, 0 = woman)."""
+    if not path.exists():
+        return {}
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    return {str(k): str(v) for k, v in data.items() if str(k) in ("0", "1")}
 
 
 @dataclass(frozen=True)
@@ -133,8 +144,16 @@ def gender_counts(company: pd.DataFrame) -> GenderCounts:
 # ---- output -----------------------------------------------------------------------------------
 
 
-def render_report(ceo: CeoTypeCounts, gender: GenderCounts) -> str:
+def render_report(
+    ceo: CeoTypeCounts,
+    gender: GenderCounts,
+    coding: Mapping[str, str] | None = None,
+) -> str:
     """Counts-only Markdown: no names, no ids, no cell values."""
+    if coding is None:
+        coding = load_gender_coding()
+    label_1 = f"coded 1 ({coding['1']})" if "1" in coding else "coded 1"
+    label_0 = f"coded 0 ({coding['0']})" if "0" in coding else "coded 0"
     leader_rows = [
         (PROFESSIONAL, _fmt(ceo.professional)),
         (FOUNDER, _fmt(ceo.founder)),
@@ -151,8 +170,8 @@ def render_report(ceo: CeoTypeCounts, gender: GenderCounts) -> str:
         ("rows with no leader name (not counted above)", _fmt(ceo.cells_without_leader)),
     ]
     gender_rows = [
-        ("coded 1", _fmt(gender.coded_1)),
-        ("coded 0", _fmt(gender.coded_0)),
+        (label_1, _fmt(gender.coded_1)),
+        (label_0, _fmt(gender.coded_0)),
         ("blank", _fmt(gender.blank)),
         ("any other value", _fmt(gender.other)),
         ("all rows", _fmt(gender.rows)),
@@ -177,8 +196,9 @@ def render_report(ceo: CeoTypeCounts, gender: GenderCounts) -> str:
         "",
         "## Company_Data Gender, exactly as coded",
         "",
-        "Counted as the strings 1 and 0, with '.', '-' and empty cells treated as blank. What 1 and 0 mean is "
-        "not interpreted here: it is an open question for the mentors, and no gender is inferred from names.",
+        "Counted as the strings 1 and 0, with '.', '-' and empty cells treated as blank. Gender coding is read "
+        "from `configs/gender_coding.yaml` (confirmed 2026-11-23 by the project team from the data owner and mentors: "
+        "1 = man, 0 = woman). Gender is never inferred from names.",
         "",
         *_table(("Value as coded", "Rows"), gender_rows),
         "",

@@ -133,8 +133,8 @@ def test_report_holds_the_counts() -> None:
     text = _report()
 
     assert "Professional CEO" in text and "Founder-CEO" in text
-    assert "| coded 1 | 2 |" in text
-    assert "| coded 0 | 1 |" in text
+    assert "| coded 1 (man) | 2 |" in text
+    assert "| coded 0 (woman) | 1 |" in text
     assert "| blank | 1 |" in text
 
 
@@ -145,12 +145,12 @@ def test_report_has_no_names_and_no_cell_values() -> None:
         assert forbidden not in text
 
 
-def test_report_does_not_interpret_what_one_and_zero_mean() -> None:
+def test_report_does_not_infer_gender_from_names() -> None:
     lowered = _report().lower()
 
-    for word in ("female", "male", "woman", "man "):
+    for word in ("female", "male"):
         assert word not in lowered
-    assert "not interpreted" in lowered
+    assert "never inferred from names" in lowered
 
 
 # ---- entry points -----------------------------------------------------------------------------
@@ -174,7 +174,7 @@ def test_run_writes_a_counts_only_report(interim: Path, tmp_path: Path, caplog: 
 
     assert code == 0
     text = report.read_text(encoding="utf-8")
-    assert "| coded 1 | 1 |" in text
+    assert "| coded 1 (man) | 1 |" in text
     assert "Asha" not in text and "Person 0" not in text
 
 

@@ -27,12 +27,12 @@ A leader is one `name_key` in the post workbooks. The column is blank on many ro
 
 ## Company_Data Gender, exactly as coded
 
-Counted as the strings 1 and 0, with '.', '-' and empty cells treated as blank. What 1 and 0 mean is not interpreted here: it is an open question for the mentors, and no gender is inferred from names.
+Counted as the strings 1 and 0, with '.', '-' and empty cells treated as blank. Gender coding is read from `configs/gender_coding.yaml` (confirmed 2026-11-23 by the project team from the data owner and mentors: 1 = man, 0 = woman). Gender is never inferred from names.
 
 | Value as coded | Rows |
 |---|---|
-| coded 1 | 602 |
-| coded 0 | 58 |
+| coded 1 (man) | 602 |
+| coded 0 (woman) | 58 |
 | blank | 192 |
 | any other value | 0 |
 | all rows | 852 |

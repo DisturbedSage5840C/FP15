@@ -116,7 +116,7 @@ Share of leaders missing each variable. Blank, "." and "-" count as missing, and
 
 ## 3. Balance for the planned comparisons
 
-Each factor is crossed with the post cut: leaders with at least 1 raw cell, and leaders with at least 15 raw cells. Raw cells stand in for posts until G1 is signed. A group with fewer than 20 leaders at the cut is flagged "too small to model"; that is a working flag for the EDA, not the modelling rule (that belongs in the pre-registration, gate G3). Founder vs professional uses ceo_type pooled per leader (conflicting and unrecognised kept apart). Gender is shown as coded in the file and is not interpreted. Title family, sector (first segment of the coded sector path) and size bands are a proposal for the mentors, not a decision. A leader with no usable value or no clear Company_Data match is shown in its own group, never filled in.
+Each factor is crossed with the post cut: leaders with at least 1 raw cell, and leaders with at least 15 raw cells. Raw cells stand in for posts until G1 is signed. A group with fewer than 20 leaders at the cut is flagged "too small to model"; that is a working flag for the EDA, not the modelling rule (that belongs in the pre-registration, gate G3). Founder vs professional uses ceo_type pooled per leader (conflicting and unrecognised kept apart). Gender is shown as coded in the file, with labels from configs/gender_coding.yaml (confirmed 2026-11-23 by the project team from the data owner and mentors: 1 = man, 0 = woman; never inferred from names). Title family, sector (first segment of the coded sector path) and size bands are a proposal for the mentors, not a decision. A leader with no usable value or no clear Company_Data match is shown in its own group, never filled in.
 
 Firm size is cut into 4 quantile bands of the readable employee counts over all of Company_Data (cut points, employees: 105, 546, 2,333). A size that cannot be read ("500+") is not guessed at.
 
@@ -134,8 +134,8 @@ Firm size is cut into 4 quantile bands of the readable employee counts over all 
 
 | Group | Leaders with 1+ raw cell | Share | Leaders with 15+ raw cells | Share | Flag at the cut |
 |---|---|---|---|---|---|
-| coded 1 | 389 | 69.1% | 226 | 69.1% |  |
-| coded 0 | 40 | 7.1% | 29 | 8.9% |  |
+| coded 1 (man) | 389 | 69.1% | 226 | 69.1% |  |
+| coded 0 (woman) | 40 | 7.1% | 29 | 8.9% |  |
 | no value | 116 | 20.6% | 65 | 19.9% |  |
 | no usable company match | 18 | 3.2% | 7 | 2.1% | too small to model |
 | all | 563 | 100.0% | 327 | 100.0% |  |

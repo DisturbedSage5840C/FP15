@@ -113,8 +113,8 @@ def test_ceo_type_and_title_family_come_from_the_leaders_cells() -> None:
 def test_gender_is_used_as_coded_and_never_guessed_for_an_unmatched_leader() -> None:
     labels = _labels()
 
-    assert _row(labels, A)[GENDER_FACTOR] == "coded 1"
-    assert _row(labels, B)[GENDER_FACTOR] == "coded 0"
+    assert _row(labels, A)[GENDER_FACTOR] == "coded 1 (man)"
+    assert _row(labels, B)[GENDER_FACTOR] == "coded 0 (woman)"
     assert _row(labels, C)[GENDER_FACTOR] == BLANK_VALUE
     assert _row(labels, D)[GENDER_FACTOR] == NOT_MATCHED
 

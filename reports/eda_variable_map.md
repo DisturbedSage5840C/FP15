@@ -12,8 +12,8 @@ Counts only: no names, post text, links, emails, company names or leader ids app
 | post_date | post workbooks | control | 6 of 563 | 98.9% | yes |
 | post_date_text | post workbooks | control | 458 of 563 | 18.7% | yes |
 | gender (as coded) | Company_Data | X leader block | 429 of 545 | 21.3% | yes |
-| gender coded 1 | Company_Data | X leader block | 389 of 545 | 28.6% | yes |
-| gender coded 0 | Company_Data | X leader block | 40 of 545 | 92.7% | yes |
+| gender coded 1 (man) | Company_Data | X leader block | 389 of 545 | 28.6% | yes |
+| gender coded 0 (woman) | Company_Data | X leader block | 40 of 545 | 92.7% | yes |
 | gender coded as another value | Company_Data | X leader block | <5 of 545 | <5 | no |
 | gender with no value | Company_Data | X leader block | 116 of 545 | 78.7% | yes |
 | sector | Company_Data | X firm block | 527 of 545 | 3.3% | yes |
@@ -40,7 +40,7 @@ Counts only: no names, post text, links, emails, company names or leader ids app
 
 - N is the leaders with at least 1 raw post cell (post-workbook variables), the leaders with a clear Company_Data match (company variables), or the cells (derived variables).
 - "." and "-" count as blank. A number that cannot be read (for example "500+") counts as missing.
-- Gender is shown as coded in Company_Data. What 1 and 0 mean is not confirmed, and gender is never inferred from names.
+- Gender is shown as coded in Company_Data, with labels from configs/gender_coding.yaml (confirmed 2026-11-23 by the project team from the data owner and mentors: 1 = man, 0 = woman). Gender is never inferred from names.
 - Study role is a proposal for the humans to confirm. Usable yes means at least one value is filled; it is not a judgment that the variable is adequate for a model.
 - Cells ending in a number are unverified: they may be reaction counts, years or ages.
 

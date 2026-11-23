@@ -13,7 +13,7 @@ Every claim is about the image projected in public posts. Never write "personali
 - The repo is public. No names, post text, links or reversible ids may ever be committed.
 - Posts are nested in leaders. Analysis files carry leader_id only, never names. leader_id is a keyed HMAC of the name key; the key lives in the FP15_ID_KEY environment variable or a git-ignored .env, never in the repo (`make check-key`). Raw post text is not pasted into chat, issues or public places.
 - Any LLM call sends only post text and an ID, with no-training settings on where the provider offers them.
-- Company_Data.xlsx: drop every email and phone column at load, before anything is written to disk. Treat "." and "-" as blank. Values like "186.6M" and "2.5B" are parsed in one function. Gender is used exactly as coded in the file until the mentors confirm what 1 and 0 mean. Never infer gender from names. Every firm in it is listed, so listed vs unlisted cannot be tested.
+- Company_Data.xlsx: drop every email and phone column at load, before anything is written to disk. Treat "." and "-" as blank. Values like "186.6M" and "2.5B" are parsed in one function. Gender coding is confirmed as 1 = man and 0 = woman (confirmed 2026-11-23 by the project team from the data owner and mentors), and gender is never inferred from names. Every firm in it is listed, so listed vs unlisted cannot be tested.
 - Missing stays missing. Nothing is guessed.
 
 ## Thresholds (live in configs/thresholds.yaml only)

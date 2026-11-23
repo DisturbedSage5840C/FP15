@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from src.ceo_gender_counts import _BLANK, CEO_TYPE_COLUMN, _leader_class, _text
+from src.ceo_gender_counts import _BLANK, CEO_TYPE_COLUMN, _leader_class, _text, load_gender_coding
 from src.company_columns import RAW_KIND, leader_post_counts
 from src.company_data import clean_cell
 from src.eda_common import SMALL, TOO_SMALL_TO_MODEL, EdaSettings, protect_cells, show_count, show_share
@@ -77,11 +77,15 @@ def _ceo_type_label(values: set[str]) -> str:
     return BLANK_VALUE if label == _BLANK else label
 
 
-def _gender_label(value: object) -> str:
+def _gender_label(value: object, coding: Mapping[str, str] | None = None) -> str:
+    if coding is None:
+        coding = load_gender_coding()
     text = clean_cell(value)
     if text is None:
         return BLANK_VALUE
-    return f"coded {text}" if text in ("0", "1") else OTHER_GENDER_CODE
+    if text in ("0", "1"):
+        return f"coded {text} ({coding[text]})" if text in coding else f"coded {text}"
+    return OTHER_GENDER_CODE
 
 
 def _sector_label(value: object) -> str:
@@ -239,10 +243,11 @@ def render_balance(counts: BalanceCounts, settings: EdaSettings) -> list[str]:
         f"raw cells. Raw cells stand in for posts until G1 is signed. A group with fewer than {settings.model_min} "
         f"leaders at the cut is flagged \"{TOO_SMALL_TO_MODEL}\"; that is a working flag for the EDA, not the "
         "modelling rule (that belongs in the pre-registration, gate G3). Founder vs professional uses ceo_type pooled "
-        "per leader (conflicting and unrecognised kept apart). Gender is shown as coded in the file and is not "
-        "interpreted. Title family, sector (first segment of the coded sector path) and size bands are a proposal "
-        "for the mentors, not a decision. A leader with no usable value or no clear Company_Data match is shown in "
-        "its own group, never filled in.",
+        "per leader (conflicting and unrecognised kept apart). Gender is shown as coded in the file, with labels "
+        "from configs/gender_coding.yaml (confirmed 2026-11-23 by the project team from the data owner and mentors: "
+        "1 = man, 0 = woman; never inferred from names). Title family, sector (first segment of the coded sector path) "
+        "and size bands are a proposal for the mentors, not a decision. A leader with no usable value or no clear "
+        "Company_Data match is shown in its own group, never filled in.",
         "",
         _edge_note(counts),
         "",

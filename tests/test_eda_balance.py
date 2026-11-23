@@ -120,8 +120,8 @@ def test_ceo_type_is_pooled_per_leader_and_kept_apart_when_conflicting_or_blank(
 
 
 def test_gender_is_counted_as_coded_with_blank_and_unmatched_apart(counts: BalanceCounts) -> None:
-    assert _pair(counts, GENDER_FACTOR, "coded 1") == (1, 1)
-    assert _pair(counts, GENDER_FACTOR, "coded 0") == (1, 1)
+    assert _pair(counts, GENDER_FACTOR, "coded 1 (man)") == (1, 1)
+    assert _pair(counts, GENDER_FACTOR, "coded 0 (woman)") == (1, 1)
     assert _pair(counts, GENDER_FACTOR, BLANK_VALUE) == (1, 0)
     assert _pair(counts, GENDER_FACTOR, NOT_MATCHED) == (1, 1)  # D is ambiguous, so never guessed
 
