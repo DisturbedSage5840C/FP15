@@ -274,6 +274,73 @@ def test_a_name_key_held_twice_inside_company_data_is_kept_as_separate_flagged_r
     assert shared["in_company"].all()
 
 
+def test_shared_roster_or_summary_key_keeps_the_exact_post_company_leader_without_enrichment_flags() -> None:
+    company = company_frame([ACME, OTHER])
+    sources = {
+        SOURCE_SHEETS: entities(SOURCE_SHEETS, [("Olive Branch", "")]),
+        SOURCE_ROSTER: entities(SOURCE_ROSTER, [("Olive Branch", "First Co"), ("Branch Olive", "Second Co")]),
+        SOURCE_SUMMARIES: entities(SOURCE_SUMMARIES, [("Olive Branch", "Third Co"), ("Branch Olive", "Fourth Co")]),
+        SOURCE_COMPANY: company_entities(company),
+    }
+
+    frame = build_master(sources, company, {name_key("Olive Branch"): 16}, fake_id).frame
+    row = row_of(frame, "Olive Branch")
+
+    assert len(frame) == 2
+    assert row["leader_id"] == fake_id(name_key("Olive Branch"))
+    assert row["match_method"] == NAME_EXACT
+    assert row["roster_key_shared"] and row["summary_key_shared"]
+    assert not row["in_roster"] and not row["in_summaries"]
+    assert row["raw_post_cells"] == 16
+
+
+def test_shared_post_key_is_retained_as_distinct_flagged_entries_never_merged() -> None:
+    company = company_frame([ACME])
+    sources = {
+        SOURCE_SHEETS: entities(SOURCE_SHEETS, [("Olive Branch", ""), ("Branch Olive", "")]),
+        SOURCE_ROSTER: (),
+        SOURCE_SUMMARIES: (),
+        SOURCE_COMPANY: company_entities(company),
+    }
+
+    frame = build_master(sources, company, {name_key("Olive Branch"): 16}, fake_id).frame
+    post_entries = frame[frame["in_posts"]]
+
+    assert len(frame) == 3
+    assert len(post_entries) == 2
+    assert post_entries["leader_id"].is_unique
+    assert post_entries["post_key_shared"].all()
+    assert int((frame["raw_post_cells"] > 0).sum()) == 1
+
+
+def test_post_denominators_equal_the_old_distinct_post_sheet_base_even_with_shared_enrichment_keys() -> None:
+    company = company_frame([
+        ACME,
+        OTHER,
+        {**OTHER, "Person_Name": "Yara Moss", "CompanyName": "Cedar Labs", "DomainName": "cedar.in"},
+    ])
+    posts = {
+        name_key("Olive Branch"): 20,
+        name_key("Quinn Reed"): 15,
+        name_key("Yara Moss"): 2,
+    }
+    sources = {
+        SOURCE_SHEETS: entities(SOURCE_SHEETS, [("Olive Branch", ""), ("Quinn Reed", ""), ("Yara Moss", "")]),
+        SOURCE_ROSTER: entities(SOURCE_ROSTER, [("Olive Branch", "A"), ("Branch Olive", "B")]),
+        SOURCE_SUMMARIES: entities(SOURCE_SUMMARIES, [("Quinn Reed", "C"), ("Reed Quinn", "D")]),
+        SOURCE_COMPANY: company_entities(company),
+    }
+
+    frame = build_master(sources, company, posts, fake_id).frame
+    distinct_post_sheet_leaders = len(posts)
+
+    # This is the regression guard: a master may add records, but must never
+    # contain fewer leaders with posts than the old distinct post-sheet base.
+    assert int((frame["raw_post_cells"] > 0).sum()) >= distinct_post_sheet_leaders
+    assert int((frame["raw_post_cells"] > 0).sum()) == distinct_post_sheet_leaders
+    assert int((frame["raw_post_cells"] >= 15).sum()) == 2
+
+
 # --- the output holds no names, links or keys ---------------------------------------------------------------------
 
 
