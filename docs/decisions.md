@@ -340,3 +340,13 @@ Breakdown in counts only (no names, links, or reversible ids) of the 10 keys tha
 Thus, dropping these 10 ambiguous keys in Step 14A inadvertently dropped 9 legitimate leaders with posts (including 5 with 15+ posts) and 10 leaders with unique Company_Data rows, purely because of internal duplicates in enrichment files (summaries or roster).
 
 
+
+## 2026-11-24: dict_measures is again the pronoun counter for the provisional re-run, not the final choice (step 14, part 1)
+
+PROVISIONAL, exploratory, not pre-registered. G1 is unsigned, so raw cells stand in for posts. This restates the 2026-11-23 entry for the 2026-11-24 re-run of `make provisional-measures`; nothing about the counter changed.
+
+- **Which counter.** `src.dict_measures.count_pronouns` gives the first-person singular and plural rates per 100 words. `src/voice.py` was not touched and was not used.
+- **This is not the final choice.** Which of `dict_measures` and `voice.py` feeds the analysis is still a human decision.
+- **Zero-word cells stay missing.** Checked on the re-run: no cell with zero words carries a rate.
+- **Possible-Hinglish cells are kept and marked** with a 0/1 mark, and every later summary shows results with and without them.
+- **Output.** The per-post file is git-ignored, starts with the PROVISIONAL banner and holds `leader_id`, `post_id` and numbers only. The raw manifest verified before the run.
