@@ -1,9 +1,12 @@
-# LLM-judge settings. Nothing here decides what a trait means: the names are labels only, and the rubric and the scale
-# are for the humans to write. src/judge_io.py refuses to build a request while rubric_text or score_scale is still
-# PLACEHOLDER, while approved_to_run is false, or while provider_no_training is not true.
-# approved_to_run is a HUMAN switch. Set it to true only after the rubric and scale are filled in and the judge is cleared
-# to run (log that in docs/decisions.md). No code or test may flip it.
-# score_scale, once filled in, is a list of the allowed numeric values, written by the humans.
+# LLM-judge settings. The rubric and scale below are a DRAFT written by Claude for the owner to edit (step 16, AI-assisted,
+# provisional). Nothing here is approved: the owner reviews and edits them by hand before anyone relies on them.
+# src/judge_io.py refuses to build a request while rubric_text or score_scale is still PLACEHOLDER, while approved_to_run
+# is false, or while provider_no_training is not true.
+# approved_to_run is a HUMAN switch. Set it to true only after the rubric and scale are reviewed and the judge is cleared
+# to run (log that in docs/decisions.md). No code or test may flip it. It is false and stays false.
+# score_scale is the list of allowed numeric values. The meaning of each value is written in rubric_text.
+# Only Northouse's five traits are covered. Business knowledge, desire to lead and the task-versus-relational pair are
+# exploratory, need mentor approval and are deliberately not in this draft.
 # model_name is left empty until the humans choose; the client is created outside src/judge_io.py.
 traits:
   - intelligence
@@ -11,8 +14,42 @@ traits:
   - determination
   - integrity
   - sociability
-rubric_text: PLACEHOLDER
-score_scale: PLACEHOLDER
+rubric_text: |
+  DRAFT by Claude for the owner to edit
+  You are rating ONE public LinkedIn post written under a corporate leader's name. Rate only the image the post
+  projects: what the words of this post show or claim. Do not guess what the writer is really like, and do not use
+  anything outside the post. If the post gives no sign of a trait, give the lowest value for it; a missing sign is not
+  a judgement about the writer. Posts may mix English with Hindi written in Latin letters.
+
+  Give each trait one value from the scale, using only the post text.
+
+  Scale (the same for every trait):
+  1 = no sign of the trait in the post
+  2 = a faint or passing sign
+  3 = some clear sign, but it is a minor part of the post
+  4 = a clear and important sign
+  5 = a strong sign that the post is built around
+
+  Traits:
+  Intelligence: the post projects knowledge, insight, good reasoning or sound judgement, for example by explaining
+  how something works, giving a considered view, or drawing a lesson from evidence.
+  Self-confidence: the post projects certainty and assurance in the writer's own abilities, decisions or standing, for
+  example by speaking with authority, claiming credit for results, or stating views without hedging.
+  Determination: the post projects persistence, drive and commitment to finish what was started, for example by
+  describing effort through setbacks, long-term goals or refusing to give up.
+  Integrity: the post projects honesty, responsibility and consistency with stated values, for example by admitting
+  mistakes, giving credit to others, keeping promises or explaining an ethical choice.
+  Sociability: the post projects warmth and an interest in other people, for example by thanking or congratulating
+  people, welcoming them, building relationships or inviting conversation.
+
+  Reply with one JSON object and nothing else, in this form, using the post_id you were given:
+  {"post_id": "<the id>", "scores": {"intelligence": 1, "self_confidence": 1, "determination": 1, "integrity": 1, "sociability": 1}}
+score_scale:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
 provider_no_training: true
 approved_to_run: false
 model_name: ""

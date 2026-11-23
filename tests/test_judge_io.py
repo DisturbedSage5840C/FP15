@@ -37,6 +37,11 @@ EXPECTED_TRAITS = ("intelligence", "self_confidence", "determination", "integrit
 EXPECTED_CONFIG_KEYS = {
     "traits", "rubric_text", "score_scale", "provider_no_training", "approved_to_run", "model_name",
 }
+DRAFT_FIRST_LINE = "DRAFT by Claude for the owner to edit"
+DRAFT_SCALE = (1.0, 2.0, 3.0, 4.0, 5.0)
+EXPECTED_TRAIT_LABELS = ("Intelligence", "Self-confidence", "Determination", "Integrity", "Sociability")
+# Exploratory constructs that need mentor approval and must stay out of the draft rubric.
+EXPLORATORY_TERMS = ("business knowledge", "desire to lead", "task-oriented", "relational")
 TEST_RUBRIC = "INVENTED RUBRIC SENTENCE FOR TESTS ONLY"
 TEST_SCALE = (1, 2, 3)  # invented for the tests; the real scale is for the humans to write
 TEXT_MARKER = "quillmoor"  # appears only in invented post text, so it must never show up anywhere else
@@ -104,15 +109,34 @@ def test_shipped_config_has_exactly_the_agreed_keys() -> None:
     assert set(values) == EXPECTED_CONFIG_KEYS
 
 
-def test_shipped_config_lists_the_five_trait_names_and_leaves_the_rest_for_the_humans() -> None:
+def test_shipped_config_lists_the_five_trait_names_and_keeps_the_human_switches_off() -> None:
     config = load_judge_config()
 
     assert config.traits == EXPECTED_TRAITS
-    assert config.rubric_text == PLACEHOLDER
-    assert config.score_scale == PLACEHOLDER
     assert config.provider_no_training is True
     assert config.approved_to_run is False
     assert config.model_name == ""
+
+
+def test_shipped_rubric_is_a_labelled_draft_with_a_scale_and_covers_only_the_five_traits() -> None:
+    config = load_judge_config()
+
+    assert config.rubric_text.splitlines()[0] == DRAFT_FIRST_LINE
+    assert config.rubric_text != PLACEHOLDER
+    assert config.score_scale == DRAFT_SCALE
+    for trait_label in EXPECTED_TRAIT_LABELS:
+        assert trait_label in config.rubric_text
+    lowered = config.rubric_text.lower()
+    for left_out in EXPLORATORY_TERMS:
+        assert left_out not in lowered
+
+
+def test_shipped_rubric_talks_about_the_image_in_the_post_not_personality() -> None:
+    lowered = load_judge_config().rubric_text.lower()
+
+    assert "personality" not in lowered
+    assert "narcissis" not in lowered
+    assert "post" in lowered
 
 
 def test_the_shipped_config_cannot_build_a_request_yet() -> None:
