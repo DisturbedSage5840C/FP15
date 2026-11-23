@@ -21,6 +21,7 @@ from src.eda_balance import (
     TITLE_FACTOR,
 )
 from src.eda_common import TOO_SMALL_TO_MODEL, load_eda_settings
+from src.leader_master import MASTER_FILE
 from src.name_key import name_key
 from src.provisional_common import BANNER, write_banner_csv
 from src.provisional_compare import (
@@ -54,7 +55,7 @@ def invented_labels() -> pd.DataFrame:
                 "leader_id": _id(i),
                 CEO_TYPE_FACTOR: "Founder-CEO" if i % 2 == 0 else "Professional CEO",
                 TITLE_FACTOR: ("CEO", "Managing director", "Chair")[(i * 7 + i // 3) % 3],
-                GENDER_FACTOR: "coded 1" if (i // 2) % 2 == 0 else "coded 0",
+                GENDER_FACTOR: "man" if (i // 2) % 2 == 0 else "woman",
                 SECTOR_FACTOR: "Rare" if i >= RARE_FROM else f"Sector {i // 20}",
                 SIZE_FACTOR: f"size band {(i // 5) % 3 + 1}",
             }
@@ -217,24 +218,28 @@ def _write_interim(interim: Path) -> None:
         ]
     )
     posts.to_csv(interim / "harmonised_posts.csv", index=False)
-    company = pd.DataFrame(
+    master = pd.DataFrame(
         {
+            "leader_id": [fake_id(name_key(n)) for n in NAMES],
+            "columns_scope": "person_and_firm",
             "Gender": ["1" if i % 2 == 0 else "0" for i in range(LEADERS)],
             "SectorPraticeAreaFeed": [f"Sector {i // 20}" for i in range(LEADERS)],
             "NumberofEmployees": [str(100 * (i + 1)) for i in range(LEADERS)],
         }
     )
-    company.to_csv(interim / "company_data.csv", index=False)
-    proposal = pd.DataFrame(
-        {"key": [name_key(n) for n in NAMES], "status": "clear", "company": [f"row:{i + 1}" for i in range(LEADERS)]}
-    )
-    proposal.to_csv(interim / "leader_id_proposal.csv", index=False)
+    master.to_csv(interim / MASTER_FILE, index=False)
 
 
 def _write_measures(path: Path) -> None:
     measures = invented_measures()
     measures["leader_id"] = [fake_id(name_key(NAMES[int(v[1:])])) for v in measures["leader_id"]]
     write_banner_csv(measures, path)
+
+
+def _write_coding(tmp_path: Path, text: str = '"1": man\n"0": woman\n') -> Path:
+    path = tmp_path / "gender_coding.yaml"
+    path.write_text(text, encoding="utf-8")
+    return path
 
 
 def _empty_manifest_dir(tmp_path: Path) -> Path:
@@ -255,6 +260,7 @@ def test_run_writes_a_report_with_no_name_in_it(tmp_path: Path) -> None:
         measures_path=tmp_path / "measures.csv",
         report_path=report_path,
         id_of=fake_id,
+        gender_coding_path=_write_coding(tmp_path),
     )
 
     text = report_path.read_text(encoding="utf-8")
@@ -262,6 +268,30 @@ def test_run_writes_a_report_with_no_name_in_it(tmp_path: Path) -> None:
     assert text.startswith(f"> {BANNER}")
     assert "Sentinel" not in text
     assert name_key(NAMES[0]) not in text
+    assert "gender_coding.yaml" in text
+    assert "exactly as coded" not in text
+    assert "coded 1" not in text
+
+
+def test_run_fails_clearly_when_the_leader_master_is_missing(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    _write_interim(tmp_path / "interim")
+    (tmp_path / "interim" / MASTER_FILE).unlink()
+    _write_measures(tmp_path / "measures.csv")
+
+    code = run(
+        raw_dir=_empty_manifest_dir(tmp_path),
+        interim_dir=tmp_path / "interim",
+        measures_path=tmp_path / "measures.csv",
+        report_path=tmp_path / "report.md",
+        id_of=fake_id,
+        gender_coding_path=_write_coding(tmp_path),
+    )
+
+    assert code == 1
+    assert not (tmp_path / "report.md").exists()
+    assert "leader_master" in caplog.text
 
 
 def test_run_fails_without_writing_when_no_leader_id_matches(tmp_path: Path) -> None:
@@ -296,3 +326,29 @@ def test_run_fails_clearly_when_the_id_key_is_missing(tmp_path: Path, monkeypatc
 
     assert code == 1
     assert not (tmp_path / "report.md").exists()
+
+
+@pytest.mark.parametrize(
+    "coding_text",
+    [None, "", '"1": man\n', "just: [unclosed\n"],
+    ids=["file missing", "empty file", "no code for 0", "malformed yaml"],
+)
+def test_run_fails_without_writing_when_the_gender_coding_is_missing_incomplete_or_unreadable(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture, coding_text: str | None
+) -> None:
+    _write_interim(tmp_path / "interim")
+    _write_measures(tmp_path / "measures.csv")
+    path = tmp_path / "absent.yaml" if coding_text is None else _write_coding(tmp_path, coding_text)
+
+    code = run(
+        raw_dir=_empty_manifest_dir(tmp_path),
+        interim_dir=tmp_path / "interim",
+        measures_path=tmp_path / "measures.csv",
+        report_path=tmp_path / "report.md",
+        id_of=fake_id,
+        gender_coding_path=path,
+    )
+
+    assert code == 1
+    assert not (tmp_path / "report.md").exists()
+    assert "gender" in caplog.text.lower()

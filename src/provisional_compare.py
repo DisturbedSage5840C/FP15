@@ -23,7 +23,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
+import yaml
 
+from src.ceo_gender_counts import DEFAULT_GENDER_CODING_PATH, load_gender_coding
 from src.eda import INTERIM_FILES, NEVER_LOADED
 from src.eda_balance import SECTOR_FACTOR
 from src.eda_common import (
@@ -38,6 +40,7 @@ from src.eda_common import (
 from src.harmonise import DEFAULT_INTERIM_DIR
 from src.id_key import MissingIdKey
 from src.id_matching import leader_id_for
+from src.leader_master import MASTER_FILE
 from src.provisional_common import BANNER, DEFAULT_MEASURES_PATH, DEFAULT_REPORT_DIR, read_banner_csv
 from src.provisional_groups import FACTORS, leader_groups
 from src.provisional_leaders import (
@@ -62,7 +65,8 @@ __all__ = ["ALL_CELLS", "NO_HINGLISH"]
 
 DEFAULT_REPORT_PATH = DEFAULT_REPORT_DIR / "provisional_comparisons.md"
 NO_GROUP_LABEL = "no group label"
-USED_TABLES = ("posts", "proposal", "company")
+POST_TABLE = "posts"
+CODED_VALUES = ("0", "1")
 P_FORMAT = "{:.3g}"
 SHARE_FORMAT = "{:.2f}"
 NOT_AVAILABLE = "n/a"
@@ -270,8 +274,10 @@ def _intro(settings: EdaSettings) -> list[str]:
         "Every result below is exploratory. Nothing is pre-registered, no gate is signed, and a p-value says nothing "
         "about causes.",
         "",
-        "- Groups come from the same labels as the EDA balance counts. Gender is used exactly as coded (1 and 0), "
-        "with no meaning attached.",
+        "- Gender, sector and firm size come from the leader master (data/interim/leader_master.csv). ceo_type and "
+        "title family come from the post sheets, because the master carries neither. Gender words come from "
+        "configs/gender_coding.yaml; a blank stays missing and nothing is inferred from a name. Leaders with no usable "
+        "company match are labelled as such.",
         f'- A count under {settings.disclosure_min} shows as "{SMALL}", and a lone hidden group hides its next smallest '
         f'too. Groups with fewer than {settings.model_min} leaders are marked "{TOO_SMALL_TO_MODEL}"; sector groups '
         "that small are left out of the models.",
@@ -302,21 +308,34 @@ def render_report(
 
 
 def _read_tables(interim_dir: Path) -> dict[str, pd.DataFrame]:
-    """The interim tables this stage needs, as strings, without post text, links or profile urls."""
+    """The posts and the leader master, as strings, without post text, links or profile urls."""
+    files = {POST_TABLE: INTERIM_FILES[POST_TABLE], "master": MASTER_FILE}
     return {
         name: pd.read_csv(
-            interim_dir / INTERIM_FILES[name],
+            interim_dir / file,
             dtype=str,
             keep_default_na=False,
             usecols=lambda column: column not in NEVER_LOADED,
         )
-        for name in USED_TABLES
+        for name, file in files.items()
     }
 
 
 def _check_some_ids_match(measures: pd.DataFrame, labels: pd.DataFrame) -> None:
     if not set(measures["leader_id"]) & set(labels["leader_id"]):
         raise ValueError("no leader id in the measures file matches a leader id built from the interim tables")
+
+
+def _read_gender_coding(path: Path) -> dict[str, str]:
+    """The confirmed words for 0 and 1; a missing, empty or incomplete file is an error, not a silent 'coded 1'."""
+    try:
+        coding = load_gender_coding(path)
+    except yaml.YAMLError as error:
+        raise ValueError(f"gender coding {path} is not valid YAML") from error
+    missing = [code for code in CODED_VALUES if code not in coding]
+    if missing:
+        raise ValueError(f"gender coding {path} has no words for code(s) {', '.join(missing)}")
+    return coding
 
 
 def run(
@@ -326,6 +345,7 @@ def run(
     report_path: Path = DEFAULT_REPORT_PATH,
     thresholds_path: Path = DEFAULT_THRESHOLDS_PATH,
     id_of: Callable[[str], str] = leader_id_for,
+    gender_coding_path: Path = DEFAULT_GENDER_CODING_PATH,
 ) -> int:
     """Verify the raw manifest, build the comparisons, write the report; 0 on success, 1 on failure (nothing written)."""
     try:
@@ -333,7 +353,9 @@ def run(
         settings = load_eda_settings(thresholds_path)
         measures = read_banner_csv(measures_path)
         tables = _read_tables(interim_dir)
-        labels = leader_groups(tables["posts"], tables["proposal"], tables["company"], settings.size_bands, id_of)
+        labels = leader_groups(
+            tables[POST_TABLE], tables["master"], settings.size_bands, id_of, _read_gender_coding(gender_coding_path)
+        )
         _check_some_ids_match(measures, labels)
         leaders = build_leader_frame(measures, settings.min_posts)
         models, comparisons = run_models(measures, labels, leaders, settings)
