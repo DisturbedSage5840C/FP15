@@ -5,10 +5,10 @@
 Every result below is exploratory. Nothing is pre-registered, no gate is signed, and a p-value says nothing about causes.
 
 - Gender, sector and firm size come from the leader master (data/interim/leader_master.csv). ceo_type and title family come from the post sheets, because the master carries neither. Gender words come from configs/gender_coding.yaml; a blank stays missing and nothing is inferred from a name. Leaders with no usable company match are labelled as such.
-- A count under 5 shows as "<5", and a lone hidden group hides its next smallest too. Groups with fewer than 20 leaders are marked "too small to model"; sector groups that small are left out of the models.
-- Models: one random intercept per leader, all five factors together, fitted by REML. The leader-level share of variance is leader variance over leader plus cell variance. Tests are joint Wald tests per factor from one fit.
-- Benjamini-Hochberg is applied once across every comparison in the last table, both measures and both cell sets together.
-- A factor column that repeats an earlier factor (for example leaders with no usable company match, which form the same set in gender, sector and size) is dropped, and the lost degrees of freedom are in the note.
+- A count under 5 shows as "<5". A hidden group is paired with a partner group that is hidden too (an unknown-value group where there is one), so no hidden count can be worked out by subtraction. Groups with fewer than 20 leaders are marked "too small to model".
+- Models: one random intercept per leader, fitted by REML. The first model has ceo_type, title family, gender and firm size band, and takes every leader in the analysis sample with a known gender, a Founder-CEO or Professional CEO ceo_type and a size band. The second adds sector for the leaders whose sector is known, with sectors under 20 leaders pooled into one "other sectors" group instead of dropped. The leader-level share of variance is leader variance over leader plus cell variance. Tests are joint Wald tests per factor from one fit.
+- Benjamini-Hochberg is applied once across every comparison in the last table: both models, both measures and both cell sets together.
+- A factor column that repeats an earlier factor is dropped, and the lost degrees of freedom are in the note.
 
 ## Leaders and shrunk rates per group (exploratory)
 
@@ -78,14 +78,16 @@ Every result below is exploratory. Nothing is pre-registered, no gate is signed,
 | no usable company match | first-person singular (I-rate) | without possible-Hinglish cells | <5 | <5 | <5 | <5 | <5 | <5 | too small to model |
 | no usable company match | first-person plural (we-rate) | all cells | <5 | <5 | <5 | <5 | <5 | <5 | too small to model |
 | no usable company match | first-person plural (we-rate) | without possible-Hinglish cells | <5 | <5 | <5 | <5 | <5 | <5 | too small to model |
-| no value | first-person singular (I-rate) | all cells | 67 | 0.05 | 0.36 | 0.65 | 1.09 | 3.24 |  |
-| no value | first-person singular (I-rate) | without possible-Hinglish cells | 67 | 0.05 | 0.36 | 0.65 | 1.07 | 3.24 |  |
-| no value | first-person plural (we-rate) | all cells | 67 | 0.32 | 1.06 | 1.43 | 1.70 | 3.67 |  |
-| no value | first-person plural (we-rate) | without possible-Hinglish cells | 67 | 0.32 | 1.06 | 1.43 | 1.70 | 3.67 |  |
-| woman | first-person singular (I-rate) | all cells | <5 | <5 | <5 | <5 | <5 | <5 |  |
-| woman | first-person singular (I-rate) | without possible-Hinglish cells | <5 | <5 | <5 | <5 | <5 | <5 |  |
-| woman | first-person plural (we-rate) | all cells | <5 | <5 | <5 | <5 | <5 | <5 |  |
-| woman | first-person plural (we-rate) | without possible-Hinglish cells | <5 | <5 | <5 | <5 | <5 | <5 |  |
+| no value | first-person singular (I-rate) | all cells | <5 | <5 | <5 | <5 | <5 | <5 |  |
+| no value | first-person singular (I-rate) | without possible-Hinglish cells | <5 | <5 | <5 | <5 | <5 | <5 |  |
+| no value | first-person plural (we-rate) | all cells | <5 | <5 | <5 | <5 | <5 | <5 |  |
+| no value | first-person plural (we-rate) | without possible-Hinglish cells | <5 | <5 | <5 | <5 | <5 | <5 |  |
+| woman | first-person singular (I-rate) | all cells | 30 | 0.04 | 0.53 | 0.77 | 1.39 | 6.88 |  |
+| woman | first-person singular (I-rate) | without possible-Hinglish cells | 30 | 0.04 | 0.53 | 0.77 | 1.39 | 6.88 |  |
+| woman | first-person plural (we-rate) | all cells | 30 | 0.28 | 0.75 | 1.15 | 1.53 | 3.02 |  |
+| woman | first-person plural (we-rate) | without possible-Hinglish cells | 30 | 0.28 | 0.75 | 1.15 | 1.53 | 3.02 |  |
+
+A group is hidden when it is under the disclosure minimum, and a group with at least the minimum is shown, so the woman group is shown when it has enough leaders. A group may still be hidden for another reason: when one group is under the minimum, the printed total would give its count away by subtraction, so a partner group is hidden with it. The partner is a group of unknown gender where there is one, otherwise the next smallest group, and the hidden groups together always reach the minimum.
 
 ### Sector
 
@@ -259,35 +261,72 @@ Every result below is exploratory. Nothing is pre-registered, no gate is signed,
 
 ## Random-intercept models (exploratory)
 
-| measure | cell set | leaders | cells | leader-level share, no factors | leader-level share, with factors | note |
-|---|---|---|---|---|---|---|
-| first-person singular (I-rate) | all cells | 154 | 11,541 | 0.23 | 0.20 |  |
-| first-person singular (I-rate) | without possible-Hinglish cells | 154 | 11,524 | 0.23 | 0.20 |  |
-| first-person plural (we-rate) | all cells | 154 | 11,541 | 0.13 | 0.11 |  |
-| first-person plural (we-rate) | without possible-Hinglish cells | 154 | 11,524 | 0.13 | 0.11 |  |
+"leaders fitted" is the number of leaders in the model. A count under the minimum shows as "<5". A count within the minimum of another printed count (the analysis sample or another model's count) shows as a lower bound, so no small difference between two printed numbers is a hidden count.
+
+| model | measure | cell set | leaders fitted | analysis sample | cells | leader-level share, no factors | leader-level share, with factors | note |
+|---|---|---|---|---|---|---|---|---|
+| without sector | first-person singular (I-rate) | all cells | 237 | 327 | 18,119 | 0.37 | 0.37 |  |
+| without sector | first-person singular (I-rate) | without possible-Hinglish cells | 237 | 327 | 18,101 | 0.37 | 0.37 |  |
+| without sector | first-person plural (we-rate) | all cells | 237 | 327 | 18,119 | 0.12 | 0.11 |  |
+| without sector | first-person plural (we-rate) | without possible-Hinglish cells | 237 | 327 | 18,101 | 0.12 | 0.11 |  |
+| with sector, small sectors pooled | first-person singular (I-rate) | all cells | 228 | 327 | 17,156 | 0.38 | 0.38 |  |
+| with sector, small sectors pooled | first-person singular (I-rate) | without possible-Hinglish cells | 228 | 327 | 17,139 | 0.38 | 0.38 |  |
+| with sector, small sectors pooled | first-person plural (we-rate) | all cells | 228 | 327 | 17,156 | 0.11 | 0.11 |  |
+| with sector, small sectors pooled | first-person plural (we-rate) | without possible-Hinglish cells | 228 | 327 | 17,139 | 0.11 | 0.11 |  |
+
+## Founder-CEO and Professional CEO (exploratory)
+
+Founder-CEO against Professional CEO only, so the test has 1 degree of freedom: leaders whose ceo_type is blank or conflicting are left out of the models. Each row is the Professional CEO group's rate minus the Founder-CEO group's rate, adjusted for the other factors in that model. The interval is a normal-approximation interval on the estimate; its level is one minus the Benjamini-Hochberg FDR level in configs/thresholds.yaml, so no new cut is introduced. Estimates are in pronoun uses per 100 words.
+
+| model | measure | cell set | factor | df | contrast | estimate | interval | p | BH-adjusted p | within the FDR level | note |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| without sector | first-person singular (I-rate) | all cells | Founder vs professional CEO | 1 | Professional CEO minus Founder-CEO | -0.47 | -0.99 to +0.05 | 0.0752 | 0.227 | no |  |
+| without sector | first-person singular (I-rate) | without possible-Hinglish cells | Founder vs professional CEO | 1 | Professional CEO minus Founder-CEO | -0.47 | -0.99 to +0.05 | 0.0757 | 0.227 | no |  |
+| without sector | first-person plural (we-rate) | all cells | Founder vs professional CEO | 1 | Professional CEO minus Founder-CEO | +0.09 | -0.22 to +0.39 | 0.58 | 0.931 | no |  |
+| without sector | first-person plural (we-rate) | without possible-Hinglish cells | Founder vs professional CEO | 1 | Professional CEO minus Founder-CEO | +0.08 | -0.22 to +0.39 | 0.587 | 0.931 | no |  |
+| with sector, small sectors pooled | first-person singular (I-rate) | all cells | Founder vs professional CEO | 1 | Professional CEO minus Founder-CEO | -0.55 | -1.10 to -0.01 | 0.0479 | 0.174 | no |  |
+| with sector, small sectors pooled | first-person singular (I-rate) | without possible-Hinglish cells | Founder vs professional CEO | 1 | Professional CEO minus Founder-CEO | -0.55 | -1.10 to -0.00 | 0.0482 | 0.174 | no |  |
+| with sector, small sectors pooled | first-person plural (we-rate) | all cells | Founder vs professional CEO | 1 | Professional CEO minus Founder-CEO | +0.02 | -0.29 to +0.33 | 0.886 | 0.931 | no |  |
+| with sector, small sectors pooled | first-person plural (we-rate) | without possible-Hinglish cells | Founder vs professional CEO | 1 | Professional CEO minus Founder-CEO | +0.02 | -0.29 to +0.33 | 0.895 | 0.931 | no |  |
 
 ## Joint tests per factor (exploratory)
 
-| measure | cell set | factor | df | p | BH-adjusted p | within the FDR level | note |
-|---|---|---|---|---|---|---|---|
-| first-person singular (I-rate) | all cells | Founder vs professional CEO | 2 | 0.00111 | 0.00811 | yes |  |
-| first-person singular (I-rate) | all cells | Title family | 5 | 0.232 | 0.415 | no | 1 column(s) repeat an earlier factor and were dropped |
-| first-person singular (I-rate) | all cells | Gender (as coded) | 2 | 0.0701 | 0.176 | no |  |
-| first-person singular (I-rate) | all cells | Sector | 4 | 0.939 | 0.939 | no |  |
-| first-person singular (I-rate) | all cells | Firm size band | 4 | 0.909 | 0.939 | no |  |
-| first-person singular (I-rate) | without possible-Hinglish cells | Founder vs professional CEO | 2 | 0.00112 | 0.00811 | yes |  |
-| first-person singular (I-rate) | without possible-Hinglish cells | Title family | 5 | 0.232 | 0.415 | no | 1 column(s) repeat an earlier factor and were dropped |
-| first-person singular (I-rate) | without possible-Hinglish cells | Gender (as coded) | 2 | 0.0703 | 0.176 | no |  |
-| first-person singular (I-rate) | without possible-Hinglish cells | Sector | 4 | 0.938 | 0.939 | no |  |
-| first-person singular (I-rate) | without possible-Hinglish cells | Firm size band | 4 | 0.91 | 0.939 | no |  |
-| first-person plural (we-rate) | all cells | Founder vs professional CEO | 2 | 0.00161 | 0.00811 | yes |  |
-| first-person plural (we-rate) | all cells | Title family | 5 | 0.00783 | 0.0261 | yes | 1 column(s) repeat an earlier factor and were dropped |
-| first-person plural (we-rate) | all cells | Gender (as coded) | 2 | 0.473 | 0.592 | no |  |
-| first-person plural (we-rate) | all cells | Sector | 4 | 0.249 | 0.415 | no |  |
-| first-person plural (we-rate) | all cells | Firm size band | 4 | 0.364 | 0.52 | no |  |
-| first-person plural (we-rate) | without possible-Hinglish cells | Founder vs professional CEO | 2 | 0.00162 | 0.00811 | yes |  |
-| first-person plural (we-rate) | without possible-Hinglish cells | Title family | 5 | 0.00752 | 0.0261 | yes | 1 column(s) repeat an earlier factor and were dropped |
-| first-person plural (we-rate) | without possible-Hinglish cells | Gender (as coded) | 2 | 0.473 | 0.592 | no |  |
-| first-person plural (we-rate) | without possible-Hinglish cells | Sector | 4 | 0.245 | 0.415 | no |  |
-| first-person plural (we-rate) | without possible-Hinglish cells | Firm size band | 4 | 0.363 | 0.52 | no |  |
+| model | measure | cell set | factor | df | contrast | estimate | interval | p | BH-adjusted p | within the FDR level | note |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| without sector | first-person singular (I-rate) | all cells | Founder vs professional CEO | 1 | Professional CEO minus Founder-CEO | -0.47 | -0.99 to +0.05 | 0.0752 | 0.227 | no |  |
+| without sector | first-person singular (I-rate) | all cells | Title family | 5 | n/a | n/a | n/a | 0.841 | 0.931 | no |  |
+| without sector | first-person singular (I-rate) | all cells | Gender (as coded) | 1 | woman minus man | +0.07 | -0.43 to +0.58 | 0.775 | 0.931 | no |  |
+| without sector | first-person singular (I-rate) | all cells | Firm size band | 3 | n/a | n/a | n/a | 0.0392 | 0.174 | no |  |
+| without sector | first-person singular (I-rate) | without possible-Hinglish cells | Founder vs professional CEO | 1 | Professional CEO minus Founder-CEO | -0.47 | -0.99 to +0.05 | 0.0757 | 0.227 | no |  |
+| without sector | first-person singular (I-rate) | without possible-Hinglish cells | Title family | 5 | n/a | n/a | n/a | 0.84 | 0.931 | no |  |
+| without sector | first-person singular (I-rate) | without possible-Hinglish cells | Gender (as coded) | 1 | woman minus man | +0.07 | -0.43 to +0.58 | 0.776 | 0.931 | no |  |
+| without sector | first-person singular (I-rate) | without possible-Hinglish cells | Firm size band | 3 | n/a | n/a | n/a | 0.0396 | 0.174 | no |  |
+| without sector | first-person plural (we-rate) | all cells | Founder vs professional CEO | 1 | Professional CEO minus Founder-CEO | +0.09 | -0.22 to +0.39 | 0.58 | 0.931 | no |  |
+| without sector | first-person plural (we-rate) | all cells | Title family | 5 | n/a | n/a | n/a | 0.0123 | 0.111 | no |  |
+| without sector | first-person plural (we-rate) | all cells | Gender (as coded) | 1 | woman minus man | +0.15 | -0.15 to +0.45 | 0.315 | 0.724 | no |  |
+| without sector | first-person plural (we-rate) | all cells | Firm size band | 3 | n/a | n/a | n/a | 0.522 | 0.931 | no |  |
+| without sector | first-person plural (we-rate) | without possible-Hinglish cells | Founder vs professional CEO | 1 | Professional CEO minus Founder-CEO | +0.08 | -0.22 to +0.39 | 0.587 | 0.931 | no |  |
+| without sector | first-person plural (we-rate) | without possible-Hinglish cells | Title family | 5 | n/a | n/a | n/a | 0.0122 | 0.111 | no |  |
+| without sector | first-person plural (we-rate) | without possible-Hinglish cells | Gender (as coded) | 1 | woman minus man | +0.15 | -0.15 to +0.45 | 0.317 | 0.724 | no |  |
+| without sector | first-person plural (we-rate) | without possible-Hinglish cells | Firm size band | 3 | n/a | n/a | n/a | 0.524 | 0.931 | no |  |
+| with sector, small sectors pooled | first-person singular (I-rate) | all cells | Founder vs professional CEO | 1 | Professional CEO minus Founder-CEO | -0.55 | -1.10 to -0.01 | 0.0479 | 0.174 | no |  |
+| with sector, small sectors pooled | first-person singular (I-rate) | all cells | Title family | 5 | n/a | n/a | n/a | 0.851 | 0.931 | no |  |
+| with sector, small sectors pooled | first-person singular (I-rate) | all cells | Gender (as coded) | 1 | woman minus man | +0.07 | -0.45 to +0.59 | 0.799 | 0.931 | no |  |
+| with sector, small sectors pooled | first-person singular (I-rate) | all cells | Sector | 3 | n/a | n/a | n/a | 0.756 | 0.931 | no |  |
+| with sector, small sectors pooled | first-person singular (I-rate) | all cells | Firm size band | 3 | n/a | n/a | n/a | 0.0325 | 0.174 | no |  |
+| with sector, small sectors pooled | first-person singular (I-rate) | without possible-Hinglish cells | Founder vs professional CEO | 1 | Professional CEO minus Founder-CEO | -0.55 | -1.10 to -0.00 | 0.0482 | 0.174 | no |  |
+| with sector, small sectors pooled | first-person singular (I-rate) | without possible-Hinglish cells | Title family | 5 | n/a | n/a | n/a | 0.85 | 0.931 | no |  |
+| with sector, small sectors pooled | first-person singular (I-rate) | without possible-Hinglish cells | Gender (as coded) | 1 | woman minus man | +0.07 | -0.45 to +0.59 | 0.8 | 0.931 | no |  |
+| with sector, small sectors pooled | first-person singular (I-rate) | without possible-Hinglish cells | Sector | 3 | n/a | n/a | n/a | 0.754 | 0.931 | no |  |
+| with sector, small sectors pooled | first-person singular (I-rate) | without possible-Hinglish cells | Firm size band | 3 | n/a | n/a | n/a | 0.0329 | 0.174 | no |  |
+| with sector, small sectors pooled | first-person plural (we-rate) | all cells | Founder vs professional CEO | 1 | Professional CEO minus Founder-CEO | +0.02 | -0.29 to +0.33 | 0.886 | 0.931 | no |  |
+| with sector, small sectors pooled | first-person plural (we-rate) | all cells | Title family | 5 | n/a | n/a | n/a | 0.0116 | 0.111 | no |  |
+| with sector, small sectors pooled | first-person plural (we-rate) | all cells | Gender (as coded) | 1 | woman minus man | +0.15 | -0.15 to +0.45 | 0.321 | 0.724 | no |  |
+| with sector, small sectors pooled | first-person plural (we-rate) | all cells | Sector | 3 | n/a | n/a | n/a | 0.931 | 0.931 | no |  |
+| with sector, small sectors pooled | first-person plural (we-rate) | all cells | Firm size band | 3 | n/a | n/a | n/a | 0.411 | 0.826 | no |  |
+| with sector, small sectors pooled | first-person plural (we-rate) | without possible-Hinglish cells | Founder vs professional CEO | 1 | Professional CEO minus Founder-CEO | +0.02 | -0.29 to +0.33 | 0.895 | 0.931 | no |  |
+| with sector, small sectors pooled | first-person plural (we-rate) | without possible-Hinglish cells | Title family | 5 | n/a | n/a | n/a | 0.0115 | 0.111 | no |  |
+| with sector, small sectors pooled | first-person plural (we-rate) | without possible-Hinglish cells | Gender (as coded) | 1 | woman minus man | +0.15 | -0.15 to +0.45 | 0.322 | 0.724 | no |  |
+| with sector, small sectors pooled | first-person plural (we-rate) | without possible-Hinglish cells | Sector | 3 | n/a | n/a | n/a | 0.93 | 0.931 | no |  |
+| with sector, small sectors pooled | first-person plural (we-rate) | without possible-Hinglish cells | Firm size band | 3 | n/a | n/a | n/a | 0.413 | 0.826 | no |  |
 

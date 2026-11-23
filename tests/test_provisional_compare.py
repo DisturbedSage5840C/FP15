@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+import re
 from pathlib import Path
 
 import numpy as np
@@ -14,23 +15,34 @@ import pandas as pd
 import pytest
 
 from src.eda_balance import (
+    BLANK_VALUE,
     CEO_TYPE_FACTOR,
     GENDER_FACTOR,
+    NOT_MATCHED,
+    OTHER_GENDER_CODE,
     SECTOR_FACTOR,
     SIZE_FACTOR,
     TITLE_FACTOR,
+    UNREADABLE_SIZE,
 )
 from src.eda_common import TOO_SMALL_TO_MODEL, load_eda_settings
 from src.leader_master import MASTER_FILE
 from src.name_key import name_key
 from src.provisional_common import BANNER, write_banner_csv
 from src.provisional_compare import (
+    FACTORS_WITHOUT_SECTOR,
     NO_HINGLISH,
+    OTHER_SECTORS,
+    UNKNOWN_GENDER,
+    WITH_SECTOR,
+    WITHOUT_SECTOR,
+    Comparison,
     group_summary_rows,
     model_frame,
     render_report,
     run,
     run_models,
+    show_fitted_counts,
 )
 from src.provisional_groups import FACTORS
 from src.provisional_leaders import ALL_CELLS, MEASURE_LABELS, build_leader_frame
@@ -123,48 +135,240 @@ def test_a_leader_with_no_label_row_gets_its_own_group_instead_of_vanishing() ->
     assert any(row[0] == "no group label" for row in rows)
 
 
-def test_model_frame_leaves_out_too_small_sector_groups_and_flagged_cells() -> None:
+def _frame(
+    measures: pd.DataFrame,
+    labels: pd.DataFrame,
+    cell_set: str = ALL_CELLS,
+    with_sector: bool = False,
+) -> pd.DataFrame:
+    return model_frame(measures, labels, _leaders(measures), SINGULAR, cell_set, SETTINGS, with_sector=with_sector)
+
+
+def test_model_frame_without_sector_keeps_every_qualifying_leader_and_drops_flagged_cells_only_when_asked() -> None:
     measures, labels = invented_measures(), invented_labels()
 
-    frame = model_frame(measures, labels, _leaders(measures), SINGULAR, NO_HINGLISH, SETTINGS)
+    all_cells = _frame(measures, labels)
+    no_hinglish = _frame(measures, labels, NO_HINGLISH)
 
-    assert set(frame[SECTOR_FACTOR]) == {"Sector 0", "Sector 1", "Sector 2"}
-    assert frame["y"].notna().all()
-    assert len(frame) == 60 * POSTS_EACH - 4 * 4
-    assert {"leader_id", "y", *FACTORS} <= set(frame.columns)
+    assert all_cells["leader_id"].nunique() == LEADERS
+    assert len(all_cells) == LEADERS * POSTS_EACH
+    assert len(no_hinglish) == LEADERS * POSTS_EACH - 4 * 4
+    assert no_hinglish["y"].notna().all()
+    assert {"leader_id", "y", *FACTORS} <= set(all_cells.columns)
+
+
+def test_model_frame_with_sector_pools_small_sectors_into_one_group_instead_of_dropping_them() -> None:
+    measures, labels = invented_measures(), invented_labels()
+
+    frame = _frame(measures, labels, with_sector=True)
+
+    assert set(frame[SECTOR_FACTOR]) == {"Sector 0", "Sector 1", "Sector 2", OTHER_SECTORS}
+    assert frame["leader_id"].nunique() == LEADERS
+    pooled = frame.loc[frame[SECTOR_FACTOR] == OTHER_SECTORS, "leader_id"].nunique()
+    assert pooled == 13
+
+
+def test_a_sector_at_the_modelling_minimum_is_not_pooled() -> None:
+    measures, labels = invented_measures(), invented_labels()
+
+    sizes = _frame(measures, labels, with_sector=True).groupby(SECTOR_FACTOR)["leader_id"].nunique()
+
+    assert sizes["Sector 0"] == SETTINGS.model_min
+    assert sizes[OTHER_SECTORS] < SETTINGS.model_min
+
+
+def _with_label(labels: pd.DataFrame, positions: range, factor: str, value: str) -> pd.DataFrame:
+    changed = labels.copy()
+    changed.loc[list(positions), factor] = value
+    return changed
+
+
+@pytest.mark.parametrize(
+    ("factor", "value"),
+    [
+        (GENDER_FACTOR, BLANK_VALUE),
+        (GENDER_FACTOR, NOT_MATCHED),
+        (GENDER_FACTOR, OTHER_GENDER_CODE),
+        (CEO_TYPE_FACTOR, BLANK_VALUE),
+        (CEO_TYPE_FACTOR, "conflicting"),
+        (SIZE_FACTOR, BLANK_VALUE),
+        (SIZE_FACTOR, UNREADABLE_SIZE),
+        (SIZE_FACTOR, NOT_MATCHED),
+    ],
+)
+def test_a_leader_without_a_known_gender_ceo_type_or_size_band_is_left_out_not_filled(
+    factor: str, value: str
+) -> None:
+    measures = invented_measures()
+    labels = _with_label(invented_labels(), range(0, 6), factor, value)
+
+    frame = _frame(measures, labels)
+
+    assert frame["leader_id"].nunique() == LEADERS - 6
+    assert not set(frame["leader_id"]) & {_id(i) for i in range(6)}
+
+
+def test_a_leader_with_no_label_row_is_left_out_of_the_models() -> None:
+    measures, labels = invented_measures(), invented_labels().iloc[:-5]
+
+    frame = _frame(measures, labels)
+
+    assert frame["leader_id"].nunique() == LEADERS - 5
+
+
+@pytest.mark.parametrize("value", [BLANK_VALUE, NOT_MATCHED])
+def test_a_leader_with_no_sector_is_left_out_of_the_with_sector_model_only(value: str) -> None:
+    measures = invented_measures()
+    labels = _with_label(invented_labels(), range(0, 6), SECTOR_FACTOR, value)
+
+    without = _frame(measures, labels)
+    with_sector = _frame(measures, labels, with_sector=True)
+
+    assert without["leader_id"].nunique() == LEADERS
+    assert with_sector["leader_id"].nunique() == LEADERS - 6
+    assert value not in set(with_sector[SECTOR_FACTOR])
 
 
 def test_model_frame_keeps_flagged_cells_in_the_all_cells_set() -> None:
     measures, labels = invented_measures(), invented_labels()
 
-    frame = model_frame(measures, labels, _leaders(measures), SINGULAR, ALL_CELLS, SETTINGS)
+    frame = _frame(measures, labels)
 
-    assert len(frame) == 60 * POSTS_EACH
+    assert len(frame) == LEADERS * POSTS_EACH
+
+
+def _comparisons() -> list[Comparison]:
+    measures, labels = invented_measures(), invented_labels()
+    return run_models(measures, labels, _leaders(measures), SETTINGS)[1]
 
 
 def test_a_real_group_shift_is_found_and_noise_is_not_and_bh_never_lowers_a_p() -> None:
-    measures, labels = invented_measures(), invented_labels()
+    comparisons = _comparisons()
 
-    _, comparisons = run_models(measures, labels, _leaders(measures), SETTINGS)
-
-    found = {(c.cell_set, c.measure, c.factor): c for c in comparisons}
-    shifted = found[(ALL_CELLS, SINGULAR, CEO_TYPE_FACTOR)]
-    assert shifted.p_value < 0.01
-    assert shifted.rejected
-    assert found[(ALL_CELLS, PLURAL, CEO_TYPE_FACTOR)].p_value > 0.05
+    found = {(c.model, c.cell_set, c.measure, c.factor): c for c in comparisons}
+    for model in (WITHOUT_SECTOR, WITH_SECTOR):
+        shifted = found[(model, ALL_CELLS, SINGULAR, CEO_TYPE_FACTOR)]
+        assert shifted.p_value < 0.01
+        assert shifted.rejected
+        assert found[(model, ALL_CELLS, PLURAL, CEO_TYPE_FACTOR)].p_value > 0.05
     assert all(c.adjusted_p >= c.p_value for c in comparisons if not math.isnan(c.p_value))
-    assert len(comparisons) == 2 * 2 * len(FACTORS)
 
 
-def test_model_runs_report_leader_level_variance_share_per_measure_and_cell_set() -> None:
+def test_bh_runs_once_across_both_models_every_measure_and_cell_set() -> None:
+    comparisons = _comparisons()
+
+    without = [c for c in comparisons if c.model == WITHOUT_SECTOR]
+    with_sector = [c for c in comparisons if c.model == WITH_SECTOR]
+    assert len(without) == 2 * 2 * len(FACTORS_WITHOUT_SECTOR)
+    assert len(with_sector) == 2 * 2 * len(FACTORS)
+    assert SECTOR_FACTOR not in {c.factor for c in without}
+    assert len(comparisons) == len(without) + len(with_sector)
+
+
+def test_founder_vs_professional_has_one_degree_of_freedom_and_a_signed_estimate_with_an_interval() -> None:
+    comparisons = [c for c in _comparisons() if c.factor == CEO_TYPE_FACTOR]
+
+    assert len(comparisons) == 2 * 2 * 2
+    assert all(c.df == 1 for c in comparisons)
+    assert {c.contrast for c in comparisons} == {"Professional CEO minus Founder-CEO"}
+    singular = [c for c in comparisons if c.measure == SINGULAR]
+    assert all(-4.0 < c.estimate < -2.0 and c.lower < c.estimate < c.upper for c in singular)
+    plural = [c for c in comparisons if c.measure == PLURAL]
+    assert all(c.lower < 0.0 < c.upper for c in plural)
+
+
+def test_model_runs_report_both_models_with_leader_counts_next_to_the_analysis_sample() -> None:
     measures, labels = invented_measures(), invented_labels()
 
     models, _ = run_models(measures, labels, _leaders(measures), SETTINGS)
 
-    assert len(models) == 4
-    singular = next(m for m in models if m.measure == SINGULAR and m.cell_set == ALL_CELLS)
+    assert len(models) == 2 * 2 * 2
+    assert {m.model for m in models} == {WITHOUT_SECTOR, WITH_SECTOR}
+    singular = next(m for m in models if m.measure == SINGULAR and m.cell_set == ALL_CELLS and m.model == WITHOUT_SECTOR)
     assert 0.2 < singular.icc_adjusted < 0.8
-    assert singular.leaders == 60
+    assert singular.leaders == LEADERS
+    assert singular.sample_leaders == LEADERS
+
+
+def test_model_runs_count_the_leaders_actually_fitted_when_some_are_left_out() -> None:
+    measures = invented_measures()
+    labels = _with_label(invented_labels(), range(0, 6), SECTOR_FACTOR, BLANK_VALUE)
+
+    models, _ = run_models(measures, labels, _leaders(measures), SETTINGS)
+
+    by_model = {m.model: m for m in models if m.measure == SINGULAR and m.cell_set == ALL_CELLS}
+    assert by_model[WITHOUT_SECTOR].leaders == LEADERS
+    assert by_model[WITH_SECTOR].leaders == LEADERS - 6
+    assert by_model[WITH_SECTOR].sample_leaders == LEADERS
+
+
+# --- disclosure control for the model counts and the gender table --------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("fitted", "sample", "expected"),
+    [(60, 73, "60"), (73, 73, "73"), (70, 73, "69 or more"), (72, 73, "69 or more"), (2, 73, "<5")],
+)
+def test_a_model_count_never_lets_a_gap_under_the_minimum_be_read_off_the_sample(
+    fitted: int, sample: int, expected: str
+) -> None:
+    assert show_fitted_counts([fitted], [sample], SETTINGS.disclosure_min) == [expected]
+
+
+def test_two_model_counts_close_to_each_other_do_not_reveal_the_small_difference_between_them() -> None:
+    shown = show_fitted_counts([380, 377], [400, 400], SETTINGS.disclosure_min)
+
+    assert shown == ["380", "376 or more"]
+
+
+def test_model_counts_keep_the_order_given_and_far_apart_counts_stay_exact() -> None:
+    shown = show_fitted_counts([377, 380, 250], [400, 400, 400], SETTINGS.disclosure_min)
+
+    assert shown == ["376 or more", "380", "250"]
+
+
+def _gender_labels(man: int, woman: int, other: int, blank: int = 0) -> pd.DataFrame:
+    labels = invented_labels()
+    values = ["man"] * man + ["woman"] * woman + [OTHER_GENDER_CODE] * other + [BLANK_VALUE] * blank
+    assert len(values) == LEADERS
+    labels[GENDER_FACTOR] = values
+    return labels
+
+
+def _gender_rows(labels: pd.DataFrame) -> dict[str, list[str]]:
+    rows = group_summary_rows(_leaders(invented_measures()), labels, GENDER_FACTOR, SETTINGS, preferred_partners=UNKNOWN_GENDER)
+    return {row[0]: row for row in rows if row[1] == MEASURE_LABELS[SINGULAR] and row[2] == ALL_CELLS}
+
+
+def test_the_partner_of_a_hidden_gender_group_is_an_unknown_group_so_the_woman_group_stays_shown() -> None:
+    rows = _gender_rows(_gender_labels(45, 20, 3, blank=5))
+
+    assert rows["man"][3] == "45"
+    assert rows["woman"][3] == "20"
+    assert rows[OTHER_GENDER_CODE][3:9] == ["<5"] * 6
+    assert rows[BLANK_VALUE][3:9] == ["<5"] * 6
+
+
+def test_the_hidden_gender_groups_never_leave_a_remainder_under_the_minimum_against_the_total() -> None:
+    rows = _gender_rows(_gender_labels(45, 20, 3, blank=5))
+
+    printed = sum(int(row[3]) for row in rows.values() if row[3] != "<5")
+    remainder = LEADERS - printed
+    assert remainder >= SETTINGS.disclosure_min
+
+
+def test_with_no_unknown_group_to_pair_the_next_smallest_group_is_hidden_beside_a_lone_hidden_one() -> None:
+    rows = _gender_rows(_gender_labels(50, 20, 3))
+
+    assert rows["woman"][3:9] == ["<5"] * 6
+    assert rows["man"][3] == "50"
+
+
+def test_a_count_under_the_minimum_is_never_printed_for_any_group_in_the_gender_rows() -> None:
+    rows = _gender_rows(_gender_labels(68, 2, 3))
+
+    assert rows["woman"][3:9] == ["<5"] * 6
+    assert rows[OTHER_GENDER_CODE][3:9] == ["<5"] * 6
 
 
 def _report() -> str:
@@ -181,6 +385,31 @@ def test_report_starts_with_the_banner_and_labels_every_result_exploratory() -> 
     assert "exploratory" in report.lower()
     assert "Benjamini-Hochberg" in report
     assert TOO_SMALL_TO_MODEL in report
+
+
+def test_report_names_both_models_and_shows_fitted_leaders_next_to_the_analysis_sample() -> None:
+    report = _report()
+
+    assert WITHOUT_SECTOR in report
+    assert WITH_SECTOR in report
+    assert "analysis sample" in report
+    assert f"| {LEADERS} | {LEADERS} |" in report
+
+
+def test_report_gives_the_founder_vs_professional_difference_with_its_interval_for_both_measures() -> None:
+    report = _report()
+    lines = [line for line in report.splitlines() if "Professional CEO minus Founder-CEO" in line]
+
+    assert {MEASURE_LABELS[SINGULAR], MEASURE_LABELS[PLURAL]} <= {label for line in lines for label in MEASURE_LABELS.values() if label in line}
+    assert any(re.search(r"[+-]\d+\.\d\d", line) for line in lines)
+    assert "interval" in report.lower()
+
+
+def test_report_explains_why_a_gender_group_may_still_be_hidden() -> None:
+    report = _report()
+
+    assert "may still be hidden" in report
+    assert "Who the models leave out" not in report
 
 
 def test_report_has_no_leader_id_and_no_personality_or_narcissism_wording() -> None:
