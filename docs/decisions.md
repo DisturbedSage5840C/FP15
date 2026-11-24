@@ -5,7 +5,7 @@ Format: date, who decided, what, why. Gate sign-offs need a human name.
 ## Gates
 - [ ] G1 segmentation (95% on 200 cells): not signed
   - G1 PROVISIONAL (AI-assisted blind count, not a human sign-off): 200/200 exact, 2026-11-23, pending confirmation by the owner. See the 2026-11-23 entry below. The box stays unticked.
-- [ ] G2 measures vs gold set: not signed
+- [ ] G2 measures vs gold set: PENDING (human); not signed
 - [ ] G3 pre-registration: not signed
 - [ ] G4 clean rebuild: not signed
 
@@ -35,6 +35,7 @@ Format: date, who decided, what, why. Gate sign-offs need a human name.
 (Claude Code: log surprises here.)
 
 - 2026-11-24 (Step 16 part 3, AI coding preflight): the Option A 300-post gold-set draw is now opened for AI-assisted coding at the owner's instruction. The raw manifest verified; the cited draw and rubric commits resolve; `configs/judge.yaml` retains its five Northouse traits, 1--5 scale and `approved_to_run: false`. Dictionaries (including pronoun rates) were built before opening this set and nothing from the gold set may be used to tune them. The rubric says a missing sign receives score 1, but does not define the requested "not enough evidence" response; the AI coder will leave that response blank where returned and otherwise apply the rubric as written. This is not a human sign-off and G2 remains pending human coding.
+- 2026-11-24 (Step 16 part 3 status): the AI-1 coder, human template writer, cache, counts-only report renderer and mock-only tests are in place. Live AI coding and `reports/goldset_ai_coding.md` are pending a configured provider credential; no post text was sent and no scores were invented. G2 remains PENDING (human): humans must re-code before any alpha or dictionary-to-human check.
 
 - 2026-11-05: The two files added to the project root (Company_Data.xlsx, Linkdln_posts_data_1.zip) were byte-identical to the copies in data/raw (same sha256 as MANIFEST.sha256). The root copies were deleted on request; data/raw is unchanged and its manifest still verifies.
 - 2026-11-05: There are five All_500.xlsx roster files in Linkdln_posts_data_1.zip (Third, Fourth, Fifth, Sixth, seventh folders). Third and Fourth are byte-identical. All five hold the same 653 people: columns CompanyName, Person_Name, Current_Title, LinkedIn_Profile_Link and person_id are identical in every copy (checked by Claude Code: 653 unique person_id, none blank). They differ only in free-text collector notes in stray cells beyond column E (2 to 6 non-empty cells per file; the Sixth and seventh files tie at 6). The notes look like scrape-depth hints. data/raw is read-only, so nothing was removed. Rule for ingest (project owner, 2026-11-05): load the roster ONCE from seventh_100_leaders/All_500.xlsx, never concatenate the five copies, keep the stray-cell notes as metadata.
