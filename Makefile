@@ -1,6 +1,6 @@
 PY ?= .venv/bin/python
 
-.PHONY: check-key verify inventory ingest ids leader-table leader-master handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report hinglish-check dedup-check dedup-characterise segmentation-score segmentation-viewer eda eda-variables gold-set-audit gold-set-draw outcome-feasibility test test-stats dict-measures-test judge-io-test provisional-measures provisional-leaders provisional-compare provisional-multiverse all
+.PHONY: check-key verify inventory ingest ids leader-table leader-master handcheck reaction-check extra-features company-columns company-numeric ceo-gender-counts post-cleaning segmentation-sample segmentation-sample-report hinglish-check dedup-check dedup-characterise segmentation-score segmentation-viewer eda eda-variables gold-set-audit gold-set-draw code-goldset-ai outcome-feasibility test test-stats dict-measures-test judge-io-test provisional-measures provisional-leaders provisional-compare provisional-multiverse all
 check-key: ## fail with a clear message unless FP15_ID_KEY is set (environment or git-ignored .env); the value is never shown
 	$(PY) -m src.id_key
 verify:   ## check raw hash manifest (writes it on first run)
@@ -53,6 +53,8 @@ gold-set-audit: ## gold-set sampler run on invented tables shaped like ours (rep
 	$(PY) -m src.gold_set_audit
 gold-set-draw: ## PROVISIONAL (AI-assisted) 300-post gold-set draw, Option A; text to git-ignored data/derived, counts to reports/gold_set_draw.md; not part of make all
 	$(PY) -m src.gold_set_draw
+code-goldset-ai: check-key verify ## PROVISIONAL AI-1 coding of the 300-post gold set; requires OPENAI_API_KEY and writes git-ignored interim files; not part of make all
+	$(PY) scripts/code_goldset_ai.py
 outcome-feasibility: ## which firm-outcome measures Company_Data can give (reports/outcome_feasibility.md); counts only; no scraping, no gate signed; not part of make all
 	$(PY) -m src.outcome_feasibility
 test:
