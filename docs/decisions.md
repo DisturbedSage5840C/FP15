@@ -6,7 +6,7 @@ Format: date, who decided, what, why. Gate sign-offs need a human name.
 - [ ] G1 segmentation (95% on 200 cells): not signed
   - G1 PROVISIONAL (AI-assisted blind count, not a human sign-off): 200/200 exact, 2026-11-23, pending confirmation by the owner. See the 2026-11-23 entry below. The box stays unticked.
 - [ ] G2 measures vs gold set: PENDING (human); not signed
-- [ ] G3 pre-registration: not signed
+- [ ] G3 pre-registration: PENDING (human); DRAFT hash is not the lock
 - [ ] G4 clean rebuild: not signed
 
 ## Decisions
