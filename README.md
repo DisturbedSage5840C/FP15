@@ -41,6 +41,7 @@ One make target per stage. Scripts produce every result; there are no notebooks.
 | `make ingest` | Harmonises the post sheets and profiles Company_Data (email and phone columns dropped at load) | `reports/harmonise_summary.md`, `reports/company_data_profile.md` |
 | `make ids` | Proposes `leader_id` matches across the roster, summaries and Company_Data; ambiguous names are not auto-resolved | `reports/id_matching.md` |
 | `make leader-table` | Builds the base list of leaders who have posts and looks each one up in the roster, summaries and Company_Data; names found only in those lists are counted, not resolved | `reports/leader_table.md` |
+| `make leader-master` | Builds the retained union of post sheets, roster, summaries and Company_Data. Shared roster or summary keys are flagged rather than dropped; internally shared post or Company_Data keys remain distinct entries. | `reports/leader_master.md` |
 | `make handcheck` | Lists the leaders whose Company_Data match is ambiguous, missing or has a different company, with candidate rows side by side and empty decision columns for a human | `data/derived/handcheck_names.csv` (git-ignored; holds names) |
 | `make company-numeric` | Numeric versions of LatestRevenueUSD, NumberofEmployees and ProfitUSD2024 (bracketed columns are not parsed); flags bare-number profit cells whose scale is unstated | `data/interim/company_numeric.csv` (git-ignored), `reports/company_numeric.md` |
 | `make reaction-check` | Counts trailing-number shapes in raw posts and draws a 50-cell hand-check sample | `reports/reaction_count_check.md` |
@@ -51,6 +52,13 @@ One make target per stage. Scripts produce every result; there are no notebooks.
 | `make segmentation-sample` | Draws the blind 200-cell sample (one cell per leader) with empty human columns; never overwrites an existing sample. The segmenter counts a repost or embedded post as one post by the leader (`is_repost`, embedded text kept out of the leader voice). It is NOT run on all cells until the sample is confirmed | `data/derived/segmentation_check_200.csv` (git-ignored) |
 | `make segmentation-score` | Compares the human counts with the segmenter. Reports a fact, does not sign off G1. Not part of `make all` | `reports/segmentation_check.md` |
 | `make segmentation-viewer` | Writes a private `n` to leader and company lookup and copies a single-file offline counting page, so the human can do the G1 hand count one cell at a time. Counts nothing, holds no segmenter count, never touches the live sample. Not part of `make all` | `data/derived/segmentation_check_200_names.csv`, `data/derived/segmentation_counter.html` (both git-ignored; the names file holds names) |
+| `make gold-set-draw` | Draws the provisional Option A 300-post gold set. The ids and post text stay in a git-ignored file; the report has counts only. | `reports/gold_set_draw.md` |
+| `make provisional-measures` | Computes provisional English-only I-rate and we-rate per cleaned cell. | `data/derived/provisional_post_measures.csv` (git-ignored) |
+| `make provisional-leaders` | Produces provisional shrunk leader summaries for all cells and without possible-Hinglish cells. | `reports/provisional_leader_measures.md` |
+| `make provisional-compare` | Runs provisional Step 14C group comparisons. | `reports/provisional_comparisons.md` |
+| `make provisional-multiverse` | Runs the provisional Step 14D robustness grid for the without-sector comparisons. | `reports/provisional_multiverse.md` |
+| `make code-goldset-ai` | Runs AI-1 coding of the opened gold set twice per post, with cache and a human template. Requires `OPENAI_API_KEY`; it fails before sending text when that credential is absent. | Git-ignored `data/interim/goldset_AI1.csv`, cache and human template |
+| `make report-goldset-ai` | Renders the counts-only AI-1 coding report after the AI-1 file exists. | `reports/goldset_ai_coding.md` |
 | `make test` | Runs the test suite | none |
 | `make all` | Runs the stages above in order | all reports |
 
@@ -58,13 +66,13 @@ Tests: `.venv/bin/python -m pytest -q --cov=src --cov-report=term-missing`.
 
 ## Status
 
-Done: raw hash check, inventory, harmonising, Company_Data loading, `leader_id` proposal, leader table (base list), reaction-count check, extra text features, Company_Data column proposal.
+Done: raw hash check, inventory, harmonising, Company_Data loading, `leader_id` proposal, the retained leader master, reaction-count check, extra text features, Company_Data profiling, post cleaning, and the provisional dictionary, leader, comparison and robustness-multiverse stages. The Option A 300-post gold set has been drawn.
 
-Not started: running the segmenter on all cells (waits for the human-checked sample), the three measurement layers, gold set, models. See `docs/decisions.md`.
+Pending: human confirmation of segmentation; human coding of the gold set; validation of measures; pre-registration; and G1--G4 sign-offs. The AI-1 gold-set coding workflow is implemented and tested, but live coding and its report wait for a configured `OPENAI_API_KEY`; no scores have been invented. See `docs/decisions.md`.
 
 Known caveats, all logged under Findings in `docs/decisions.md`:
 
-- `reports/harmonise_summary.md` and `reports/id_matching.md` still print the earlier count of 544 leaders. That figure counts leaders with at least one self-authored post, which needs segmentation, so it is not comparable with the 563 to 567 raw-cell counts. Do not compare them.
+- Counts have different units. The leader master identifies 564 leaders represented in post sheets, while the Option A gold-set pool has 563 leaders with at least one non-empty cleaned cell. Neither is a count of confirmed self-authored posts, because segmentation remains unsigned. Do not treat these as interchangeable denominators.
 - The 15-post minimum is currently applied to raw post cells, a cell-level proxy, until author blocks exist.
 - Several Company_Data numeric columns are text with bracketed notes or capped values (for example "500+"). The Step C report shows how many cells read as numbers.
 - `leader_id` is a keyed HMAC of a normalised name. It is a pseudonym, not anonymisation, and it stays reversible by anyone who holds the key. Commits dc458bb, fe919e2 and 94b4812 still hold example ids from the earlier unsalted scheme in `reports/extra_features.md`; see the history entry in `docs/decisions.md`.
@@ -80,11 +88,11 @@ A human sign-off line in `docs/decisions.md` is required before work moves past 
 | Gate | Check |
 |---|---|
 | G1 | Segmentation: 95% accuracy on 200 random cells |
-| G2 | Measures against the gold set (Krippendorff alpha 0.67 or higher) |
+| G2 | PENDING (human): measures against the gold set, including Krippendorff alpha 0.67 or higher |
 | G3 | Pre-registration locked with a dated hash |
 | G4 | Clean rebuild of every table and figure from raw files |
 
-The gold set stays closed while dictionaries are built. Every threshold lives in `configs/thresholds.yaml` and nowhere else.
+The gold set was opened only for provisional AI-assisted coding after the dictionaries were built; it cannot be used to tune them. Human re-coding remains required before G2. Every threshold lives in `configs/thresholds.yaml` and nowhere else.
 
 ## Layout
 
